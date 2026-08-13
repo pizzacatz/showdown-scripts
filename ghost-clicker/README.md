@@ -34,6 +34,7 @@ When a new regulation rolls around, update the format IDs and labels here — th
 
 | Version | Notes |
 |---------|-------|
+| 4.5 | UI: quick-select row centered in the menu column. |
 | 4.4 | UI: quick-select buttons moved to their own labeled form row below Format. |
 | 4.3 | Fix: stop quick-select clicks from bubbling — the client dismisses popups on any background click, which closed the format menu the instant it opened. |
 | 4.2 | Fix: wait for the real format selector — the client's disabled "Loading..." placeholder was consuming the one-shot default before the format list arrived. |

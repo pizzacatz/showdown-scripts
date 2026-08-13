@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown QoL Battle Tools
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Arm-then-confirm forfeit button and automatic replay archive (upload + local download) for Pokémon Showdown battles.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -327,7 +327,7 @@
         // Bottom-left, below the native controls content, with clear spacing.
         toolbar.style.cssText =
             'display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-start;' +
-            'margin-top:12px;padding:8px 8px 4px;border-top:1px solid rgba(0,0,0,0.15);clear:both;';
+            'margin-top:28px;padding:8px 8px 4px;border-top:1px solid rgba(0,0,0,0.15);clear:both;';
         // Inside .battle-controls: everything in a battle room is absolutely
         // positioned, so a normal-flow sibling renders invisibly behind the
         // arena. The client rewrites the controls' innerHTML every turn,

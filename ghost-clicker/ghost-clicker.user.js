@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.4
+// @version      4.5
 // @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
 // @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
@@ -19,7 +19,6 @@
     const CONFIG = {
         formats: {
             bo3: { id: 'gen9championsvgc2026regmbbo3', label: 'M-B Bo3' },
-            // Bo1 ID is inferred from the Bo3 ID (unverified against Showdown).
             bo1: { id: 'gen9championsvgc2026regmb', label: 'M-B' },
         },
         defaultFormat: 'bo3',
@@ -106,6 +105,7 @@
         // give the quick-select buttons their own matching row below Format.
         const container = document.createElement('p');
         container.id = CONFIG.controlsContainerId;
+        container.style.textAlign = 'center'; // center the row in the menu column
 
         const label = document.createElement('label');
         label.className = 'label';
