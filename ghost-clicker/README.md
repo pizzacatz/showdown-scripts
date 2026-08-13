@@ -19,7 +19,7 @@ Everything tweakable lives in the `CONFIG` block at the top of the script:
 | Key | Meaning |
 |-----|---------|
 | `formats.bo3.id` | Showdown format ID for Reg M-B Bo3 (`gen9championsvgc2026regmbbo3`). |
-| `formats.bo1.id` | Showdown format ID for Reg M-B Bo1 (`gen9championsvgc2026regmb`, **unverified** — inferred by dropping the `bo3` suffix). |
+| `formats.bo1.id` | Showdown format ID for Reg M-B Bo1 (`gen9championsvgc2026regmb`, verified against the server's format list). |
 | `defaultFormat` | Which format the one-time default applies (`'bo3'`). |
 | `optionTimeoutMs` | Hard cap on a selection attempt before it aborts cleanly. |
 
@@ -27,7 +27,6 @@ When a new regulation rolls around, update the format IDs and labels here — th
 
 ## Known limitations
 
-- The Bo1 format ID has not been confirmed against Showdown's actual format list. If the M-B button does nothing, inspect a Bo1 entry in the format menu (`button[name="selectFormat"]`'s `value` attribute) and correct `CONFIG.formats.bo1.id`.
 - Selecting a format works by clicking through Showdown's real format menu, so the menu popup flashes briefly during a selection.
 - Mobile layout has not been tested.
 
