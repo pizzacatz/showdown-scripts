@@ -35,6 +35,7 @@ When a new regulation rolls around, update the format IDs and labels here — th
 
 | Version | Notes |
 |---------|-------|
+| 4.2 | Fix: wait for the real format selector — the client's disabled "Loading..." placeholder was consuming the one-shot default before the format list arrived. |
 | 4.1 | Auto-update headers (`@updateURL`/`@downloadURL`) pointing at this repo. |
 | 4.0 | One-shot default + quick-select buttons; removed the permanent 50 ms enforcement loop ([PRD](../docs/PRD-ghost-clicker-improvements.md)). |
 | 3.0 | "Hyper-optimized" enforcement loop: polled every 50 ms and re-forced Bo3 whenever the selector changed. |

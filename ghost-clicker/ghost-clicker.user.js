@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.1
+// @version      4.2
 // @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
 // @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
@@ -37,6 +37,16 @@
         macroRunning: false,    // a selection attempt is in flight
     };
 
+    // The client first renders a disabled "Loading..." placeholder with the
+    // same name="format" until the server sends the format list; clicking it
+    // does nothing (and the client's handler bails without BattleFormats).
+    // Only treat the selector as usable once both are ready.
+    function getReadyFormatButton() {
+        const btn = document.querySelector(CONFIG.selectors.formatButton);
+        if (!btn || btn.disabled || !window.BattleFormats) return null;
+        return btn;
+    }
+
     // ------------------------------------------------------------------
     // selectFormat — the single reusable one-shot action. Backs both the
     // automatic default and the manual quick-select buttons.
@@ -44,7 +54,7 @@
     function selectFormat(formatId) {
         if (state.macroRunning) return;
 
-        const formatBtn = document.querySelector(CONFIG.selectors.formatButton);
+        const formatBtn = getReadyFormatButton();
         if (!formatBtn) return;
         if (formatBtn.value === formatId) return; // already active: no-op
 
@@ -74,7 +84,9 @@
     // ------------------------------------------------------------------
     function applyDefaultOnce() {
         if (state.initializedOnce) return;
-        if (!document.querySelector(CONFIG.selectors.formatButton)) return;
+        // Don't spend the one-shot until the selector is actually usable;
+        // a later DOM mutation will bring us back here once it is.
+        if (!getReadyFormatButton()) return;
 
         state.initializedOnce = true;
         selectFormat(CONFIG.formats[CONFIG.defaultFormat].id);
