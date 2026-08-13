@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.3
+// @version      4.4
 // @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
 // @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
@@ -102,9 +102,15 @@
         if (!formatBtn) return;
         if (document.getElementById(CONFIG.controlsContainerId)) return;
 
-        const container = document.createElement('span');
+        // The home form lays out each row as <p><label class="label">…</label>…</p>;
+        // give the quick-select buttons their own matching row below Format.
+        const container = document.createElement('p');
         container.id = CONFIG.controlsContainerId;
-        container.style.marginLeft = '6px';
+
+        const label = document.createElement('label');
+        label.className = 'label';
+        label.textContent = 'Quick:';
+        container.appendChild(label);
 
         for (const key of ['bo1', 'bo3']) {
             const format = CONFIG.formats[key];
@@ -112,7 +118,7 @@
             btn.type = 'button';
             btn.className = 'button';
             btn.textContent = format.label;
-            btn.style.marginLeft = '4px';
+            btn.style.marginRight = '6px';
             btn.addEventListener('click', (e) => {
                 // The client dismisses all popups on any click that bubbles
                 // to the room ("dispatchClickBackground"); without stopping
@@ -125,7 +131,12 @@
             container.appendChild(btn);
         }
 
-        formatBtn.insertAdjacentElement('afterend', container);
+        const formatRow = formatBtn.closest('p');
+        if (formatRow) {
+            formatRow.insertAdjacentElement('afterend', container);
+        } else {
+            formatBtn.insertAdjacentElement('afterend', container);
+        }
     }
 
     // ------------------------------------------------------------------

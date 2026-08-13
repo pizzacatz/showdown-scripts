@@ -58,5 +58,6 @@ All knobs are in the `CONFIG` block at the top of the script:
 
 | Version | Notes |
 |---------|-------|
+| 1.2 | UI: toolbar anchored bottom-left below the move buttons with spacing and a separator. |
 | 1.1 | Fix invisible toolbar (now inside `.battle-controls`, re-injected with state after client rewrites) and auto-download (waits for the download link instead of failing if it hasn't rendered; pending jobs resume on later DOM changes). |
 | 1.0 | Initial release: forfeit button, replay archive, dry-run mode, test suite. |
