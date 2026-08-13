@@ -223,6 +223,28 @@ describe('DOM integration (fixtures, dry-run)', () => {
     expect(qol2.jobStore.isFullyDone('battle-gen9championsvgc2026regmbbo3-1234')).toBe(true);
   });
 
+  it('re-injects the toolbar after the client rewrites the controls, keeping state', () => {
+    const qol = loadWithFixture(FIXTURE_ACTIVE);
+    qol.CONFIG.dryRun = false;
+    const send = vi.fn();
+    window.app = { rooms: { 'battle-gen9championsvgc2026regmbbo3-5678': { send } } };
+    qol.core.evaluate();
+    const btn = document.querySelector('button[data-qol="forfeit"]');
+    btn.click();
+    btn.click(); // confirmed → forfeit sent
+    expect(send).toHaveBeenCalledTimes(1);
+
+    // Simulate the client rewriting .battle-controls (wipes the toolbar).
+    document.querySelector('.battle-controls').innerHTML = '<div class="controls"></div>';
+    qol.core.evaluate();
+    const toolbars = document.querySelectorAll(`.${qol.SELECTORS.toolbarClass}`);
+    expect(toolbars.length).toBe(1);
+    const newBtn = document.querySelector('button[data-qol="forfeit"]');
+    expect(newBtn.disabled).toBe(true); // already forfeited: stays disabled
+    newBtn.click();
+    expect(send).toHaveBeenCalledTimes(1); // no second /forfeit
+  });
+
   it('forfeit send targets the game room via the client API', () => {
     const qol = loadWithFixture(FIXTURE_ACTIVE);
     qol.CONFIG.dryRun = false;

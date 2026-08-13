@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown QoL Battle Tools
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  Arm-then-confirm forfeit button and automatic replay archive (upload + local download) for Pokémon Showdown battles.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -27,6 +27,7 @@
             persistProcessedState: true,
             maxRetries: 3,
             uploadConfirmTimeoutMs: 10000,
+            downloadLinkTimeoutMs: 5000,
         },
         forfeit: {
             confirmWindowMs: 2500,
@@ -324,9 +325,12 @@
         toolbar.className = SELECTORS.toolbarClass;
         toolbar.dataset.roomId = roomId;
         toolbar.style.cssText = 'padding:4px 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;';
-        // Sibling of .battle-controls: the client rewrites the controls'
-        // innerHTML, so anything inside would be wiped.
-        controls.insertAdjacentElement('afterend', toolbar);
+        // Inside .battle-controls: everything in a battle room is absolutely
+        // positioned, so a normal-flow sibling renders invisibly behind the
+        // arena. The client rewrites the controls' innerHTML every turn,
+        // wiping the toolbar — the observer re-injects it, and the buttons
+        // re-render from stored state so nothing user-visible is lost.
+        controls.appendChild(toolbar);
         return toolbar;
     }
 
@@ -334,41 +338,58 @@
     // Feature: arm-then-confirm forfeit
     // ------------------------------------------------------------------
     const forfeitToggles = new Map(); // roomId -> arm toggle
+    const forfeitSent = new Set();    // roomIds already forfeited (double-submit guard)
 
     function ensureForfeitButton(toolbar, context) {
         if (!CONFIG.features.forfeitButton) return;
+        const { roomId } = context;
         let btn = toolbar.querySelector('button[data-qol="forfeit"]');
         if (!btn) {
             btn = document.createElement('button');
             btn.dataset.qol = 'forfeit';
             btn.className = 'button';
             btn.style.minHeight = '32px'; // touch-friendly
-            btn.textContent = 'Forfeit';
-            const toggle = createArmToggle({
-                windowMs: CONFIG.forfeit.confirmWindowMs,
-                onExpire: () => renderForfeitButton(btn, false),
-            });
-            forfeitToggles.set(context.roomId, toggle);
-            btn.addEventListener('click', () => {
-                if (btn.disabled) return;
+            if (!forfeitToggles.has(roomId)) {
+                forfeitToggles.set(roomId, createArmToggle({
+                    windowMs: CONFIG.forfeit.confirmWindowMs,
+                    onExpire: () => {
+                        const current = document.querySelector(
+                            `.${SELECTORS.toolbarClass}[data-room-id="${roomId}"] button[data-qol="forfeit"]`
+                        );
+                        if (current) renderForfeitButton(current, false);
+                    },
+                }));
+            }
+            const toggle = forfeitToggles.get(roomId);
+            btn.addEventListener('click', (e) => {
+                // Keep the click from reaching the client's background
+                // handler, which dismisses popups on unnamed-button clicks.
+                e.preventDefault();
+                e.stopPropagation();
+                if (btn.disabled || forfeitSent.has(roomId)) return;
                 const result = toggle.press();
                 if (result === 'armed') {
                     renderForfeitButton(btn, true);
-                    log('Forfeit', `armed for ${context.roomId}`);
+                    log('Forfeit', `armed for ${roomId}`);
                 } else {
                     renderForfeitButton(btn, false);
-                    btn.disabled = true; // double-submit guard
-                    log('Forfeit', `confirmed for ${context.roomId}`);
-                    sendBattleCommand('/forfeit', context.roomId);
+                    forfeitSent.add(roomId);
+                    btn.disabled = true;
+                    log('Forfeit', `confirmed for ${roomId}`);
+                    sendBattleCommand('/forfeit', roomId);
                 }
             });
             toolbar.appendChild(btn);
         }
-        if (context.ended && !btn.disabled) {
-            const toggle = forfeitToggles.get(context.roomId);
+        // The toolbar (and button) is recreated whenever the client rewrites
+        // the controls, so always re-render from stored state.
+        const toggle = forfeitToggles.get(roomId);
+        if (context.ended || forfeitSent.has(roomId)) {
             if (toggle) toggle.disarm();
             renderForfeitButton(btn, false);
             btn.disabled = true;
+        } else {
+            renderForfeitButton(btn, !!(toggle && toggle.isArmed()));
         }
     }
 
@@ -434,16 +455,22 @@
             return;
         }
 
-        const link = roomEl.querySelector(SELECTORS.downloadReplayLink);
-        if (!link) {
-            jobStore.markFailed(roomId, 'download', 'download link not found');
-            updateReplayStatus(context);
-            return;
-        }
-        log('Replay', `downloading replay for ${roomId}`);
-        link.click(); // native handler builds the file locally
-        jobStore.markDone(roomId, 'download');
-        updateReplayStatus(context);
+        // The end-of-battle controls may not have rendered yet when battle
+        // end is first detected — wait for the link instead of failing.
+        waitForElement(SELECTORS.downloadReplayLink, {
+            root: roomEl,
+            timeoutMs: CONFIG.replay.downloadLinkTimeoutMs,
+        })
+            .then((link) => {
+                log('Replay', `downloading replay for ${roomId}`);
+                link.click(); // native handler builds the file locally
+                jobStore.markDone(roomId, 'download');
+            })
+            .catch((err) => {
+                jobStore.markFailed(roomId, 'download', err);
+                logError('Replay', `download failed for ${roomId}`, err);
+            })
+            .then(() => updateReplayStatus(context));
     }
 
     function onBattleEnded(context) {
@@ -477,7 +504,9 @@
             retry.dataset.qol = 'replay-retry';
             retry.className = 'button';
             retry.textContent = 'Retry replay';
-            retry.addEventListener('click', () => {
+            retry.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 jobStore.resetForManualRetry(context.roomId, 'upload');
                 jobStore.resetForManualRetry(context.roomId, 'download');
                 retry.remove();
@@ -497,6 +526,12 @@
         if (toolbar) {
             ensureForfeitButton(toolbar, context);
             if (context.ended) updateReplayStatus(context);
+        }
+        // Resume pending jobs on later DOM changes (battle:ended fires only
+        // once; beginAttempt() guards against duplicate or exhausted work).
+        if (context.ended && !jobStore.isFullyDone(context.roomId)) {
+            runUploadJob(context);
+            runDownloadJob(context);
         }
     });
     emitter.on('battle:ended', onBattleEnded);
