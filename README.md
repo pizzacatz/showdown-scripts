@@ -6,7 +6,8 @@ Tampermonkey userscripts that improve quality of life on [Pokémon Showdown](htt
 
 | Script | Version | Description |
 |--------|---------|-------------|
-| [Ghost Clicker](ghost-clicker/) | 4.0 | Replaces Showdown's Random Battle default with **Reg M-B Bo3** (once per page load, never re-enforced) and adds quick-select buttons for Reg M-B Bo1/Bo3. |
+| [Ghost Clicker](ghost-clicker/) | 4.1 | Replaces Showdown's Random Battle default with **Reg M-B Bo3** (once per page load, never re-enforced) and adds quick-select buttons for Reg M-B Bo1/Bo3. |
+| [QoL Battle Tools](qol-battle/) | 1.0 | Arm-then-confirm **Forfeit** button and automatic **replay archive** — every completed battle is uploaded to Showdown's replay server and downloaded locally, exactly once. |
 
 More scripts will be added over time; each new feature gets its own script and its own PRD in [`docs/`](docs/) rather than growing an existing script.
 
@@ -22,8 +23,13 @@ More scripts will be added over time; each new feature gets its own script and i
 <script-name>/            one directory per userscript
   <script-name>.user.js     the installable script
   README.md                 what it does, config, limitations
-docs/                     PRDs and design documents
+docs/                     PRDs, design documents, DOM recon notes
+test/                     Vitest suite + DOM fixtures (run: npm test)
 ```
+
+## Testing
+
+`npm install` once, then `npm test` runs the Vitest suite (jsdom): state-machine and idempotency logic, timing behavior via fake timers, and selector/injection checks against DOM fixtures in `test/fixtures/`. For live-site validation, scripts provide a `dryRun` config flag that logs intended actions without performing them.
 
 ## Design conventions
 
