@@ -1,53 +1,124 @@
 // ==UserScript==
-// @name         Showdown VGC Ghost Clicker (Hyper-Optimized)
+// @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      3.0
-// @description  Aggressively automates UI clicks with zero hardcoded delay.
+// @version      4.0
+// @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
-    const VGC_FORMAT = 'gen9championsvgc2026regmbbo3';
-    let macroRunning = false;
+    // ------------------------------------------------------------------
+    // Configuration — format IDs, labels, selectors, and timeouts.
+    // Regulation updates should only ever require edits in this block.
+    // ------------------------------------------------------------------
+    const CONFIG = {
+        formats: {
+            bo3: { id: 'gen9championsvgc2026regmbbo3', label: 'M-B Bo3' },
+            // Bo1 ID is inferred from the Bo3 ID (unverified against Showdown).
+            bo1: { id: 'gen9championsvgc2026regmb', label: 'M-B' },
+        },
+        defaultFormat: 'bo3',
+        selectors: {
+            formatButton: 'button[name="format"]',
+            formatOption: (id) => `button[name="selectFormat"][value="${id}"]`,
+        },
+        controlsContainerId: 'ghost-clicker-quickselect',
+        optionPollMs: 25,      // poll rate while waiting for the menu option to render
+        optionTimeoutMs: 1500, // hard cap on any single selection attempt
+    };
 
-    function runClickMacro() {
-        const formatBtn = document.querySelector('button[name="format"]');
+    const state = {
+        initializedOnce: false, // one-time default applied (or attempted) this page load
+        macroRunning: false,    // a selection attempt is in flight
+    };
 
-        if (!formatBtn || formatBtn.value === VGC_FORMAT || macroRunning) {
-            return;
-        }
+    // ------------------------------------------------------------------
+    // selectFormat — the single reusable one-shot action. Backs both the
+    // automatic default and the manual quick-select buttons.
+    // ------------------------------------------------------------------
+    function selectFormat(formatId) {
+        if (state.macroRunning) return;
 
-        macroRunning = true;
+        const formatBtn = document.querySelector(CONFIG.selectors.formatButton);
+        if (!formatBtn) return;
+        if (formatBtn.value === formatId) return; // already active: no-op
 
-        // Step 1: Open the menu
-        formatBtn.click();
+        state.macroRunning = true;
+        formatBtn.click(); // open the format menu
 
-        // Step 2: HYPER-POLLING. Check the DOM every 10 milliseconds instead of waiting.
-        const fastPoll = setInterval(() => {
-            const targetFormatBtn = document.querySelector(`button[name="selectFormat"][value="${VGC_FORMAT}"]`);
-
-            if (targetFormatBtn) {
-                // The instant the button is found, stop polling and click it
-                clearInterval(fastPoll);
-                targetFormatBtn.click();
-
-                // A brief 500ms cooldown to prevent the script from infinitely looping if Showdown lags
-                setTimeout(() => { macroRunning = false; }, 500);
+        const poll = setInterval(() => {
+            const option = document.querySelector(CONFIG.selectors.formatOption(formatId));
+            if (option) {
+                finish();
+                option.click();
             }
-        }, 10);
+        }, CONFIG.optionPollMs);
 
-        // Step 3: Safety Switch. If the menu fails to open for some reason, kill the poll after 1 second.
-        setTimeout(() => {
-            clearInterval(fastPoll);
-            macroRunning = false;
-        }, 1000);
+        const timeout = setTimeout(finish, CONFIG.optionTimeoutMs);
+
+        function finish() {
+            clearInterval(poll);
+            clearTimeout(timeout);
+            state.macroRunning = false;
+        }
     }
 
-    // Check the page every 50 milliseconds instead of every 1000 milliseconds.
-    // This guarantees the macro fires the instant you navigate back to the home menu.
-    setInterval(runClickMacro, 50);
+    // ------------------------------------------------------------------
+    // applyDefaultOnce — sets the default format a single time per page
+    // load. Never re-enforces: manual changes afterwards stick.
+    // ------------------------------------------------------------------
+    function applyDefaultOnce() {
+        if (state.initializedOnce) return;
+        if (!document.querySelector(CONFIG.selectors.formatButton)) return;
 
+        state.initializedOnce = true;
+        selectFormat(CONFIG.formats[CONFIG.defaultFormat].id);
+    }
+
+    // ------------------------------------------------------------------
+    // ensureControls — injects the quick-select buttons next to the
+    // format selector. Idempotent: the stable container ID prevents
+    // duplicates when Showdown rebuilds the UI.
+    // ------------------------------------------------------------------
+    function ensureControls() {
+        const formatBtn = document.querySelector(CONFIG.selectors.formatButton);
+        if (!formatBtn) return;
+        if (document.getElementById(CONFIG.controlsContainerId)) return;
+
+        const container = document.createElement('span');
+        container.id = CONFIG.controlsContainerId;
+        container.style.marginLeft = '6px';
+
+        for (const key of ['bo1', 'bo3']) {
+            const format = CONFIG.formats[key];
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'button';
+            btn.textContent = format.label;
+            btn.style.marginLeft = '4px';
+            btn.addEventListener('click', () => selectFormat(format.id));
+            container.appendChild(btn);
+        }
+
+        formatBtn.insertAdjacentElement('afterend', container);
+    }
+
+    // ------------------------------------------------------------------
+    // Event-driven initialization: react to Showdown building/rebuilding
+    // the UI instead of enforcing on a permanent timer.
+    // ------------------------------------------------------------------
+    function onDomChange() {
+        applyDefaultOnce();
+        ensureControls();
+    }
+
+    new MutationObserver(onDomChange).observe(document.body, {
+        childList: true,
+        subtree: true,
+    });
+
+    onDomChange(); // handle the case where the UI already exists at script start
 })();

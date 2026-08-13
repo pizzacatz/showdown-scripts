@@ -1,41 +1,37 @@
 # Showdown Scripts
 
-Tampermonkey userscripts that improve quality of life on [Pokémon Showdown](https://play.pokemonshowdown.com/).
+Tampermonkey userscripts that improve quality of life on [Pokémon Showdown](https://play.pokemonshowdown.com/). Each script lives in its own directory with its own README; install only the ones you want.
 
 ## Scripts
 
-| Script | Status | What it does |
-|--------|--------|--------------|
-| [Ghost Clicker](ghost-clicker/ghost-clicker.user.js) | v3.0 — refactor planned | Automatically selects the Reg M-B Bo3 battle format on the Showdown home screen. |
+| Script | Version | Description |
+|--------|---------|-------------|
+| [Ghost Clicker](ghost-clicker/) | 4.0 | Replaces Showdown's Random Battle default with **Reg M-B Bo3** (once per page load, never re-enforced) and adds quick-select buttons for Reg M-B Bo1/Bo3. |
+
+More scripts will be added over time; each new feature gets its own script and its own PRD in [`docs/`](docs/) rather than growing an existing script.
 
 ## Installing a script
 
 1. Install the [Tampermonkey](https://www.tampermonkey.net/) browser extension.
-2. Open the Tampermonkey dashboard → **Utilities** → **Import from file**, or simply open the raw `.user.js` file in the browser — Tampermonkey will offer to install it.
+2. Open the script's `.user.js` file raw in the browser — Tampermonkey will offer to install it. (Alternatively: Tampermonkey dashboard → **Utilities** → **Import from file**.)
 3. Reload `play.pokemonshowdown.com`.
 
-## Ghost Clicker
-
-**Current behavior (v3.0):** polls the page every 50 ms and re-applies the configured format (`gen9championsvgc2026regmbbo3`) whenever the format selector differs from it. This makes Bo3 a *permanent lock* — manually choosing another format gets overridden.
-
-**Planned behavior:** apply the Bo3 default **once per page load**, then leave the selector alone. Manual quick-select buttons ("M-B" for Bo1, "M-B Bo3" for Bo3) let the user deliberately switch between Reg M-B formats. See the full [PRD](docs/PRD-ghost-clicker-improvements.md).
-
-Key design points of the planned refactor:
-
-- **One-shot initialization** — a `MutationObserver` waits for the format selector to exist, applies the default once, and never re-enforces it.
-- **Reusable `selectFormat(formatId)`** — the same one-shot action backs both the automatic default and the manual buttons.
-- **Guarded state** — `macroRunning` prevents overlapping selection attempts; stable button IDs prevent duplicate injected controls; every wait loop has a hard timeout.
-- **Centralized configuration** — format IDs, labels, selectors, and timeouts live in a single `CONFIG` block.
-
-### Repository layout
+## Repository layout
 
 ```
-ghost-clicker/ghost-clicker.user.js   # the userscript (current v3.0)
-docs/PRD-ghost-clicker-improvements.md # requirements for the planned refactor
+<script-name>/            one directory per userscript
+  <script-name>.user.js     the installable script
+  README.md                 what it does, config, limitations
+docs/                     PRDs and design documents
 ```
 
-## Development notes
+## Design conventions
 
-- Format IDs must be confirmed from Showdown's actual DOM (`button[name="selectFormat"]` values), never guessed. The Reg M-B **Bo1** ID is still unconfirmed (see PRD §11).
-- Prefer stable `name`/`value` attributes over visible button text when writing selectors — Showdown's UI text changes more often than its attributes.
-- Scope per script: each userscript stays focused; new QoL features (replay handling, chat automation, etc.) get their own script and their own PRD.
+These apply to every script in the repo:
+
+- **Default, don't enforce.** A script may set an initial state once, but must never fight the user's manual choices afterwards.
+- **Event-driven over polling.** React to DOM changes with `MutationObserver`; short-lived polling is allowed only inside an explicit action, always with a hard timeout.
+- **Idempotent injection.** Injected UI uses stable element IDs so rebuilds of Showdown's SPA never create duplicates.
+- **Configuration up top.** Format IDs, labels, selectors, and timeouts live in a `CONFIG` block; routine updates (e.g. a new regulation) shouldn't touch logic.
+- **Stable selectors.** Prefer `name`/`value` attributes over visible button text — Showdown's UI text changes more often than its attributes.
+- **One script, one job.** Unrelated features (replay handling, chat automation, …) get their own script and PRD instead of expanding an existing one.
