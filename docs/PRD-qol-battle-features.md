@@ -489,3 +489,8 @@ Decisions made during PRD review, superseding the corresponding sections above:
 4. **Concurrency: exactly one battle at a time.** The user plays one game at a time; the job pipeline does not need multi-battle parallelism, only idempotency.
 5. **Replays stay public** (amends §18 nuance). Uploads intentionally use the default public visibility so replays can be shared with peers for feedback. No private/password option is needed.
 6. **Local downloads keep Showdown's native filename** (confirms §6.5). No filename verification or renaming logic.
+7. **Forfeit concedes the current game only**, never the Bo3 set.
+8. **Ghost Clicker stays a standalone script.** It acts once on the home screen at first load, while this script's features run during every battle; merging would couple unrelated lifecycles for no benefit. The shared core in §3 serves only the battle features.
+9. **Scripts auto-update** via `@updateURL`/`@downloadURL` headers pointing at the raw GitHub `main` files.
+10. **This script lives in `qol-battle/`** as `qol-battle.user.js`; shared test tooling (`package.json`, `test/`) sits at the repo root.
+11. **Testing approach:** unit tests (Vitest) on the DOM-free logic plus HTML fixture tests for selectors, and a `CONFIG.dryRun` mode for live-site validation. No local Showdown server / Playwright E2E for now.

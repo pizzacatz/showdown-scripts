@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.0
+// @version      4.1
 // @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
+// @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
+// @downloadURL  https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
 // @grant        none
 // ==/UserScript==
 
