@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.8
+// @version      4.9
 // @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
 // @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
@@ -27,6 +27,7 @@
             formatOption: (id) => `button[name="selectFormat"][value="${id}"]`,
         },
         controlsContainerId: 'ghost-clicker-quickselect',
+        hideStyleId: 'ghost-clicker-hide-format-popup',
         optionPollMs: 25,      // poll rate while waiting for the menu option to render
         optionTimeoutMs: 1500, // hard cap on any single selection attempt
     };
@@ -46,6 +47,25 @@
         return btn;
     }
 
+    // The selection clicks through Showdown's real format menu so all of
+    // the client's format-change side effects run (team selector re-render,
+    // best-of / Tera-preview toggles) — but the popup itself is hidden via
+    // CSS for the duration, so there is no visible flash. :has() scopes the
+    // rule to the format menu; unrelated popups stay visible. Cleanup is
+    // guaranteed by finish(), which runs on success and on timeout alike.
+    function setFormatPopupHidden(hidden) {
+        const existing = document.getElementById(CONFIG.hideStyleId);
+        if (hidden && !existing) {
+            const style = document.createElement('style');
+            style.id = CONFIG.hideStyleId;
+            style.textContent =
+                '.ps-popup:has(button[name="selectFormat"]) { visibility: hidden !important; }';
+            document.head.appendChild(style);
+        } else if (!hidden && existing) {
+            existing.remove();
+        }
+    }
+
     // ------------------------------------------------------------------
     // selectFormat — the single reusable one-shot action. Backs both the
     // automatic default and the manual quick-select buttons.
@@ -58,13 +78,16 @@
         if (formatBtn.value === formatId) return; // already active: no-op
 
         state.macroRunning = true;
-        formatBtn.click(); // open the format menu
+        setFormatPopupHidden(true);
+        formatBtn.click(); // open the (hidden) format menu
 
         const poll = setInterval(() => {
             const option = document.querySelector(CONFIG.selectors.formatOption(formatId));
             if (option) {
+                clearInterval(poll);
+                clearTimeout(timeout);
+                option.click(); // closes the popup before it is unhidden below
                 finish();
-                option.click();
             }
         }, CONFIG.optionPollMs);
 
@@ -73,6 +96,7 @@
         function finish() {
             clearInterval(poll);
             clearTimeout(timeout);
+            setFormatPopupHidden(false);
             state.macroRunning = false;
         }
     }
