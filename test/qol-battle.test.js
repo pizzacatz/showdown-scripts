@@ -8,12 +8,20 @@ const FIXTURE_ENDED = fs.readFileSync(path.join(root, 'test/fixtures/battle-ende
 const FIXTURE_ACTIVE = fs.readFileSync(path.join(root, 'test/fixtures/battle-active.html'), 'utf8');
 
 // Loads the userscript fresh into the jsdom page and returns its internals.
+// Each load registers a MutationObserver on the shared document; track the
+// instances so stale ones can be disconnected between tests (a real page
+// only ever runs one instance).
+const loadedInstances = [];
 function loadScript() {
   (0, eval)(SCRIPT);
+  loadedInstances.push(window.__showdownQoL);
   return window.__showdownQoL;
 }
 
 beforeEach(() => {
+  for (const qol of loadedInstances.splice(0)) {
+    qol.core.shutdown();
+  }
   document.body.innerHTML = '';
   sessionStorage.clear();
   delete window.__showdownQoL;
@@ -282,6 +290,42 @@ describe('DOM integration (fixtures, dry-run)', () => {
     const job = qol.jobStore.getJob('battle-gen9championsvgc2026regmbbo3-5678');
     expect(job.upload.status).toBe('done');
     expect(job.replayUrl).toContain('replay.pokemonshowdown.com');
+  });
+
+  it('ignores replay links outside the popup when confirming the upload', async () => {
+    const qol = loadWithFixture(FIXTURE_ACTIVE);
+    qol.CONFIG.dryRun = false;
+    const send = vi.fn();
+    window.app = { rooms: { 'battle-gen9championsvgc2026regmbbo3-5678': { send } } };
+
+    // Decoy: a replay link elsewhere on the page (chat message, news item).
+    const decoy = document.createElement('a');
+    decoy.href = 'https://replay.pokemonshowdown.com/gen9-someoneelse-999';
+    document.body.appendChild(decoy);
+
+    const controls = document.querySelector('.battle-controls .controls');
+    controls.innerHTML = '<button class="button" name="saveReplay">Upload and share replay</button>';
+    qol.core.evaluate();
+    await Promise.resolve();
+
+    const job = qol.jobStore.getJob('battle-gen9championsvgc2026regmbbo3-5678');
+    expect(job.upload.status).toBe('running'); // still waiting for the real popup
+    expect(job.replayUrl).toBe(null);
+
+    // The real popup arrives; the poller picks it up and dismisses it.
+    const popup = document.createElement('div');
+    popup.className = 'ps-popup';
+    popup.innerHTML =
+      '<p><a class="replay-link" href="https://replay.pokemonshowdown.com/gen9-mine-123">link</a></p>' +
+      '<p><button class="button" name="close">Close</button></p>';
+    document.body.appendChild(popup);
+    const closeClick = vi.fn();
+    popup.querySelector('button[name="close"]').addEventListener('click', closeClick);
+
+    await new Promise((r) => setTimeout(r, 250)); // real poll interval is 100ms
+    expect(job.upload.status).toBe('done');
+    expect(job.replayUrl).toContain('gen9-mine-123');
+    expect(closeClick).toHaveBeenCalledTimes(1);
   });
 
   it('clicks the native "Skip to end" button after a confirmed forfeit', async () => {

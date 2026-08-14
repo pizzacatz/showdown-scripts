@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown QoL Battle Tools
 // @namespace    http://tampermonkey.net/
-// @version      1.6
+// @version      1.7
 // @description  Arm-then-confirm forfeit button and automatic replay archive (upload + local download) for Pokémon Showdown battles.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -52,7 +52,11 @@
         saveReplayButton: 'button[name="saveReplay"]',
         downloadReplayLink: 'a.replayDownloadButton',
         skipToEndButton: 'button[name="goToEnd"]',
-        replayUploadedLink: 'a[href*="replay.pokemonshowdown.com/"]:not(.replayDownloadButton)',
+        // Scoped to the popup: replay links can appear elsewhere too (chat,
+        // main-menu news, Bo3 wrappers), and matching one of those would
+        // "confirm" the upload against the wrong element and leave the
+        // actual popup undismissed.
+        replayUploadedLink: '.ps-popup a[href*="replay.pokemonshowdown.com/"]:not(.replayDownloadButton)',
         popup: '.ps-popup',
         popupCloseButton: 'button[name="close"]',
         toolbarClass: 'qol-battle-toolbar',
@@ -296,7 +300,10 @@
             .filter((r) => r.roomId && isGameRoomId(r.roomId));
     }
 
+    let shutdownRequested = false; // set by core.shutdown() (test cleanup)
+
     function evaluate() {
+        if (shutdownRequested) return;
         for (const { el, roomId } of findBattleRooms()) {
             const context = { roomId, roomEl: el, ended: isBattleEnded(roomId, el) };
             emitter.emit('battle:seen', context);
@@ -588,8 +595,10 @@
 
     jobStore.loadPersisted();
 
+    let observer = null;
     if (typeof MutationObserver !== 'undefined' && document.body) {
-        new MutationObserver(scheduleEvaluate).observe(document.body, {
+        observer = new MutationObserver(scheduleEvaluate);
+        observer.observe(document.body, {
             childList: true,
             subtree: true,
         });
@@ -600,7 +609,17 @@
     window.__showdownQoL = {
         CONFIG,
         SELECTORS,
-        core: { evaluate, emitter, endedEmitted },
+        core: {
+            evaluate,
+            emitter,
+            endedEmitted,
+            // Deactivates this instance entirely (tests load the script many
+            // times into one page; a real page only ever runs one instance).
+            shutdown() {
+                shutdownRequested = true;
+                if (observer) observer.disconnect();
+            },
+        },
         jobStore,
         helpers: {
             createEmitter,

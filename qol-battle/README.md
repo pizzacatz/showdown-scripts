@@ -66,6 +66,7 @@ All knobs are in the `CONFIG` block at the top of the script:
 
 | Version | Notes |
 |---------|-------|
+| 1.7 | Fix: upload confirmation now only matches the replay link inside the popup — a replay link anywhere else on the page (chat, news, Bo3 wrapper) could satisfy it first, falsely confirming the upload and leaving the popup open. |
 | 1.6 | Skip-to-end fires on every battle ending (win, loss, either forfeit), and the "replay uploaded" popup auto-dismisses. |
 | 1.5 | Confirmed forfeit also clicks "Skip to end" so the replay download happens immediately. |
 | 1.4 | UI: toolbar pushed further down (64px gap). |
