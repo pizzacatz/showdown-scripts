@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown QoL Battle Tools
 // @namespace    http://tampermonkey.net/
-// @version      1.4
+// @version      1.5
 // @description  Arm-then-confirm forfeit button and automatic replay archive (upload + local download) for Pokémon Showdown battles.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -31,6 +31,7 @@
         },
         forfeit: {
             confirmWindowMs: 2500,
+            skipToEndTimeoutMs: 5000,
         },
         observerDebounceMs: 100,
         storageKey: 'showdown-qol-replay-state',
@@ -49,6 +50,7 @@
         battleControls: '.battle-controls',
         saveReplayButton: 'button[name="saveReplay"]',
         downloadReplayLink: 'a.replayDownloadButton',
+        skipToEndButton: 'button[name="goToEnd"]',
         replayUploadedLink: 'a[href*="replay.pokemonshowdown.com/"]:not(.replayDownloadButton)',
         toolbarClass: 'qol-battle-toolbar',
     };
@@ -380,6 +382,7 @@
                     btn.disabled = true;
                     log('Forfeit', `confirmed for ${roomId}`);
                     sendBattleCommand('/forfeit', roomId);
+                    skipToEnd(context.roomEl, roomId);
                 }
             });
             toolbar.appendChild(btn);
@@ -394,6 +397,30 @@
         } else {
             renderForfeitButton(btn, !!(toggle && toggle.isArmed()));
         }
+    }
+
+    // After a forfeit, battle playback replays the final events at normal
+    // speed, which delays the end-of-battle controls (and thus the replay
+    // download). Clicking the client's "Skip to end" button snaps playback
+    // to the end immediately. The button only renders while playback is
+    // behind, so wait briefly; if it never appears, playback is already
+    // caught up and there is nothing to skip.
+    function skipToEnd(roomEl, roomId) {
+        if (CONFIG.dryRun) {
+            console.log(`[Showdown QoL][DRY RUN] would skip to end for ${roomId}`);
+            return;
+        }
+        waitForElement(SELECTORS.skipToEndButton, {
+            root: roomEl,
+            timeoutMs: CONFIG.forfeit.skipToEndTimeoutMs,
+        })
+            .then((btn) => {
+                log('Forfeit', `skipping playback to end for ${roomId}`);
+                btn.click();
+            })
+            .catch(() => {
+                log('Forfeit', `no skip-to-end button for ${roomId} (playback already at end)`);
+            });
     }
 
     function renderForfeitButton(btn, armed) {
@@ -564,6 +591,7 @@
             isBestOfWrapperId,
             roomIdFromElement,
             sendBattleCommand,
+            skipToEnd,
         },
     };
 })();

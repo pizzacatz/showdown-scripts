@@ -12,6 +12,8 @@ A **Forfeit** button appears in a small toolbar under the battle controls. First
 
 In a best-of-3, the command goes to the current **game room**, so it concedes only that game, never the set.
 
+After a confirmed forfeit, the script also clicks the client's native **"Skip to end"** button (if playback is behind), so the end-of-battle screen — and the replay download — arrive immediately instead of after the final animations.
+
 ### Automatic replay archive
 
 When a battle ends, two independent jobs run:
@@ -58,6 +60,7 @@ All knobs are in the `CONFIG` block at the top of the script:
 
 | Version | Notes |
 |---------|-------|
+| 1.5 | Confirmed forfeit also clicks "Skip to end" so the replay download happens immediately. |
 | 1.4 | UI: toolbar pushed further down (64px gap). |
 | 1.3 | UI: more spacing (28px) between the move buttons and the toolbar. |
 | 1.2 | UI: toolbar anchored bottom-left below the move buttons with spacing and a separator. |

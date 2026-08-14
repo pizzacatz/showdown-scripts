@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.5
+// @version      4.6
 // @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
 // @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
@@ -18,8 +18,8 @@
     // ------------------------------------------------------------------
     const CONFIG = {
         formats: {
-            bo3: { id: 'gen9championsvgc2026regmbbo3', label: 'M-B Bo3' },
-            bo1: { id: 'gen9championsvgc2026regmb', label: 'M-B' },
+            bo3: { id: 'gen9championsvgc2026regmbbo3', label: 'Reg M-B (Bo3)' },
+            bo1: { id: 'gen9championsvgc2026regmb', label: 'Reg M-B' },
         },
         defaultFormat: 'bo3',
         selectors: {
@@ -101,24 +101,20 @@
         if (!formatBtn) return;
         if (document.getElementById(CONFIG.controlsContainerId)) return;
 
-        // The home form lays out each row as <p><label class="label">…</label>…</p>;
-        // give the quick-select buttons their own matching row below Format.
-        const container = document.createElement('p');
+        // Fully native rows: one <p><button class="button"> per format, no
+        // styling of our own. The client's own `.menugroup p` (10px row
+        // margin) and `.menugroup .button` (200px width, native padding and
+        // gradient) rules do all the work, dark mode included.
+        const container = document.createElement('div');
         container.id = CONFIG.controlsContainerId;
-        container.style.textAlign = 'center'; // center the row in the menu column
-
-        const label = document.createElement('label');
-        label.className = 'label';
-        label.textContent = 'Quick:';
-        container.appendChild(label);
 
         for (const key of ['bo1', 'bo3']) {
             const format = CONFIG.formats[key];
+            const row = document.createElement('p');
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'button';
             btn.textContent = format.label;
-            btn.style.marginRight = '6px';
             btn.addEventListener('click', (e) => {
                 // The client dismisses all popups on any click that bubbles
                 // to the room ("dispatchClickBackground"); without stopping
@@ -128,7 +124,8 @@
                 e.stopPropagation();
                 selectFormat(format.id);
             });
-            container.appendChild(btn);
+            row.appendChild(btn);
+            container.appendChild(row);
         }
 
         const formatRow = formatBtn.closest('p');

@@ -245,6 +245,29 @@ describe('DOM integration (fixtures, dry-run)', () => {
     expect(send).toHaveBeenCalledTimes(1); // no second /forfeit
   });
 
+  it('clicks the native "Skip to end" button after a confirmed forfeit', async () => {
+    const qol = loadWithFixture(FIXTURE_ACTIVE);
+    qol.CONFIG.dryRun = false;
+    const send = vi.fn();
+    window.app = { rooms: { 'battle-gen9championsvgc2026regmbbo3-5678': { send } } };
+    qol.core.evaluate();
+
+    // Playback is behind: the client is showing its skip controls.
+    const roomEl = document.querySelector('[id^="room-battle-"]');
+    const goToEnd = document.createElement('button');
+    goToEnd.setAttribute('name', 'goToEnd');
+    const goToEndClick = vi.fn();
+    goToEnd.addEventListener('click', goToEndClick);
+    roomEl.querySelector('.battle-controls').appendChild(goToEnd);
+
+    const btn = document.querySelector('button[data-qol="forfeit"]');
+    btn.click(); // arm
+    btn.click(); // confirm
+    expect(send).toHaveBeenCalledWith('/forfeit');
+    await Promise.resolve(); // waitForElement resolves on a microtask
+    expect(goToEndClick).toHaveBeenCalledTimes(1);
+  });
+
   it('forfeit send targets the game room via the client API', () => {
     const qol = loadWithFixture(FIXTURE_ACTIVE);
     qol.CONFIG.dryRun = false;
