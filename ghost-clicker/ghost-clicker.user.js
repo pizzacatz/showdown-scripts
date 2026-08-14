@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.9
+// @version      4.10
 // @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
 // @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
@@ -35,6 +35,7 @@
     const state = {
         initializedOnce: false, // one-time default applied (or attempted) this page load
         macroRunning: false,    // a selection attempt is in flight
+        lastTeamIndex: -1,      // last non-blank team selection seen (for blank-team repair)
     };
 
     // The client first renders a disabled "Loading..." placeholder with the
@@ -168,12 +169,71 @@
     }
 
     // ------------------------------------------------------------------
+    // Blank-team repair — works around a classic-client bug: switching
+    // between two formats that share a teambuilder format (Reg M-B Bo1 ↔
+    // Bo3) blanks the team selector. The client resets curTeamIndex to -1
+    // before re-rendering, and its "keep the current team" path can never
+    // see the pre-switch value; its auto-pick is skipped because the
+    // teambuilder format didn't change. We remember the last non-blank
+    // selection and, when the blank appears, restore it through the
+    // client's own renderTeams — so the repaired button is fully native.
+    // Self-deactivating: if Showdown fixes the bug, the blank never
+    // renders and this code never fires.
+    // ------------------------------------------------------------------
+    function getTeamButton() {
+        const formatBtn = document.querySelector(CONFIG.selectors.formatButton);
+        const form = formatBtn && formatBtn.closest('form');
+        return form ? form.querySelector('button[name="team"]') : null;
+    }
+
+    // Mirrors renderTeams' own resolution of a format's teambuilder format.
+    function teambuilderFormatOf(formatId) {
+        const format = window.BattleFormats && window.BattleFormats[formatId];
+        if (!format) return '';
+        return format.teambuilderFormat || (format.isTeambuilderFormat ? formatId : '');
+    }
+
+    function trackAndRepairTeam() {
+        const teamBtn = getTeamButton();
+        // Disabled variants ("Loading...", "You have no teams", random
+        // formats) are legitimate — never touch them.
+        if (!teamBtn || teamBtn.disabled) return;
+
+        if (teamBtn.value !== '') {
+            const index = Number(teamBtn.value);
+            if (!Number.isNaN(index)) state.lastTeamIndex = index;
+            return;
+        }
+
+        // Blank enabled team button: only the client bug renders this state
+        // while a compatible team exists. Restore the remembered team, but
+        // only if it actually fits the current format's teambuilder format —
+        // a blank after switching to a format you have no teams for is
+        // legitimate and must stay blank.
+        if (state.lastTeamIndex < 0) return;
+        const room = window.app && window.app.rooms && window.app.rooms[''];
+        const formatBtn = getReadyFormatButton();
+        const teams = window.Storage && window.Storage.teams;
+        if (!room || typeof room.renderTeams !== 'function' || !formatBtn || !teams) return;
+
+        const teamFormat = teambuilderFormatOf(formatBtn.value);
+        const team = teams[state.lastTeamIndex];
+        if (!teamFormat || !team || team.format !== teamFormat) return;
+
+        // What the client's own team picker does on selection.
+        room.curTeamIndex = state.lastTeamIndex;
+        room.curTeamFormat = teamFormat;
+        teamBtn.outerHTML = room.renderTeams(formatBtn.value, state.lastTeamIndex);
+    }
+
+    // ------------------------------------------------------------------
     // Event-driven initialization: react to Showdown building/rebuilding
     // the UI instead of enforcing on a permanent timer.
     // ------------------------------------------------------------------
     function onDomChange() {
         applyDefaultOnce();
         ensureControls();
+        trackAndRepairTeam();
     }
 
     new MutationObserver(onDomChange).observe(document.body, {
