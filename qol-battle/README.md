@@ -12,7 +12,11 @@ A **Forfeit** button appears in a small toolbar under the battle controls. First
 
 In a best-of-3, the command goes to the current **game room**, so it concedes only that game, never the set.
 
-After a confirmed forfeit, the script also clicks the client's native **"Skip to end"** button (if playback is behind), so the end-of-battle screen — and the replay download — arrive immediately instead of after the final animations.
+### Instant battle end
+
+Whenever a battle ends — you win, you lose, either side forfeits, the set is decided — the script clicks the client's native **"Skip to end"** button (if playback is behind), so the end-of-battle screen — and the replay jobs below — arrive immediately instead of after the final animations. This fires at most once per battle.
+
+The "replay uploaded" popup is also dismissed automatically (via its own Close button) once the replay link has been captured, so nothing is left to click through.
 
 ### Automatic replay archive
 
@@ -43,7 +47,9 @@ All knobs are in the `CONFIG` block at the top of the script:
 | `features.autoReplayUpload` | `true` | Toggle automatic upload. |
 | `features.autoReplayDownload` | `true` | Toggle automatic local download. |
 | `replay.maxRetries` | `3` | Automatic attempts per job before requiring manual retry. |
+| `replay.autoDismissUploadPopup` | `true` | Auto-close the "replay uploaded" popup after capturing the link. |
 | `forfeit.confirmWindowMs` | `2500` | How long the armed forfeit state lasts. |
+| `forfeit.skipToEndTimeoutMs` | `5000` | How long to wait for the "Skip to end" button before assuming playback is caught up. |
 
 ## Validation
 
@@ -60,6 +66,7 @@ All knobs are in the `CONFIG` block at the top of the script:
 
 | Version | Notes |
 |---------|-------|
+| 1.6 | Skip-to-end fires on every battle ending (win, loss, either forfeit), and the "replay uploaded" popup auto-dismisses. |
 | 1.5 | Confirmed forfeit also clicks "Skip to end" so the replay download happens immediately. |
 | 1.4 | UI: toolbar pushed further down (64px gap). |
 | 1.3 | UI: more spacing (28px) between the move buttons and the toolbar. |

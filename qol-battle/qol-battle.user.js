@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown QoL Battle Tools
 // @namespace    http://tampermonkey.net/
-// @version      1.5
+// @version      1.6
 // @description  Arm-then-confirm forfeit button and automatic replay archive (upload + local download) for Pokémon Showdown battles.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -28,6 +28,7 @@
             maxRetries: 3,
             uploadConfirmTimeoutMs: 10000,
             downloadLinkTimeoutMs: 5000,
+            autoDismissUploadPopup: true,
         },
         forfeit: {
             confirmWindowMs: 2500,
@@ -52,6 +53,8 @@
         downloadReplayLink: 'a.replayDownloadButton',
         skipToEndButton: 'button[name="goToEnd"]',
         replayUploadedLink: 'a[href*="replay.pokemonshowdown.com/"]:not(.replayDownloadButton)',
+        popup: '.ps-popup',
+        popupCloseButton: 'button[name="close"]',
         toolbarClass: 'qol-battle-toolbar',
     };
 
@@ -399,13 +402,18 @@
         }
     }
 
-    // After a forfeit, battle playback replays the final events at normal
-    // speed, which delays the end-of-battle controls (and thus the replay
-    // download). Clicking the client's "Skip to end" button snaps playback
-    // to the end immediately. The button only renders while playback is
-    // behind, so wait briefly; if it never appears, playback is already
-    // caught up and there is nothing to skip.
+    // When a battle ends — own forfeit, opponent forfeit, win, loss —
+    // playback still replays the final events at normal speed, which delays
+    // the end-of-battle controls (and thus the replay download). Clicking
+    // the client's "Skip to end" button snaps playback to the end
+    // immediately. The button only renders while playback is behind, so
+    // wait briefly; if it never appears, playback is already caught up and
+    // there is nothing to skip.
+    const skipToEndRequested = new Set(); // roomIds already skipped (once per battle)
+
     function skipToEnd(roomEl, roomId) {
+        if (skipToEndRequested.has(roomId)) return;
+        skipToEndRequested.add(roomId);
         if (CONFIG.dryRun) {
             console.log(`[Showdown QoL][DRY RUN] would skip to end for ${roomId}`);
             return;
@@ -465,6 +473,13 @@
                 jobStore.getJob(roomId).replayUrl = link.href;
                 jobStore.markDone(roomId, 'upload');
                 log('Replay', `upload confirmed for ${roomId}`, link.href);
+                // The "replay uploaded" popup needs no interaction once the
+                // link is captured — dismiss it via its own Close button.
+                if (CONFIG.replay.autoDismissUploadPopup) {
+                    const popup = link.closest(SELECTORS.popup);
+                    const close = popup && popup.querySelector(SELECTORS.popupCloseButton);
+                    if (close) close.click();
+                }
             })
             .catch((err) => {
                 jobStore.markFailed(roomId, 'upload', err);
@@ -504,6 +519,11 @@
     }
 
     function onBattleEnded(context) {
+        // End detection reads the client's battle-ended flag, which is set
+        // as soon as the server's win message arrives — skip playback to
+        // the end right away so the end screen (and the replay controls
+        // the jobs below rely on) render immediately.
+        skipToEnd(context.roomEl, context.roomId);
         if (jobStore.isFullyDone(context.roomId)) {
             log('Replay', `already processed: ${context.roomId}`);
             return;

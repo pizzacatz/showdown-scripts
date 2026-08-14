@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.7
+// @version      4.8
 // @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
 // @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
@@ -101,10 +101,13 @@
         if (!formatBtn) return;
         if (document.getElementById(CONFIG.controlsContainerId)) return;
 
-        // Fully native rows cloned from the Battle! button: same classes
-        // ("button mainmenu1 big") and same <strong> label markup, so every
-        // theme — including custom color schemes that restyle .mainmenuN —
-        // renders these identically to Battle!. No styling of our own.
+        // Native rows matching the Battle! button: same color classes
+        // ("button mainmenu1") and <strong> label markup, so every theme —
+        // including custom color schemes that restyle .mainmenuN — colors
+        // these identically to Battle!. The `.big` class itself must NOT be
+        // used: the client rewrites the label of every `button.big` in the
+        // main menu ("Battle! / Find a random opponent") whenever search
+        // state changes. Its size rules are inlined instead.
         const container = document.createElement('div');
         container.id = CONFIG.controlsContainerId;
 
@@ -113,7 +116,9 @@
             const row = document.createElement('p');
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'button mainmenu1 big';
+            btn.className = 'button mainmenu1';
+            // .menugroup .button.big, minus the class the client targets.
+            btn.style.cssText = 'width:230px;height:50px;padding:0;font-size:14pt;';
             const strong = document.createElement('strong');
             strong.textContent = format.label;
             btn.appendChild(strong);

@@ -245,6 +245,45 @@ describe('DOM integration (fixtures, dry-run)', () => {
     expect(send).toHaveBeenCalledTimes(1); // no second /forfeit
   });
 
+  it('requests skip-to-end for any ended battle (dry-run)', () => {
+    const logSpy = vi.spyOn(console, 'log');
+    loadWithFixture(FIXTURE_ENDED); // load-time evaluate detects the ended battle
+    const messages = logSpy.mock.calls.map((c) => c.join(' '));
+    expect(
+      messages.filter((m) => m.includes('would skip to end for battle-gen9championsvgc2026regmbbo3-1234')).length
+    ).toBe(1);
+    logSpy.mockRestore();
+  });
+
+  it('dismisses the upload popup via its Close button after confirming', async () => {
+    const qol = loadWithFixture(FIXTURE_ACTIVE);
+    qol.CONFIG.dryRun = false;
+    const send = vi.fn();
+    window.app = { rooms: { 'battle-gen9championsvgc2026regmbbo3-5678': { send } } };
+
+    // The server's "replay uploaded" popup, as ReplayUploadedPopup builds it.
+    const popup = document.createElement('div');
+    popup.className = 'ps-popup';
+    popup.innerHTML =
+      '<p><a class="replay-link" href="https://replay.pokemonshowdown.com/gen9-123">link</a></p>' +
+      '<p><button class="button" name="close">Close</button></p>';
+    document.body.appendChild(popup);
+    const closeClick = vi.fn();
+    popup.querySelector('button[name="close"]').addEventListener('click', closeClick);
+
+    // End the battle: the client rewrites the controls with the end buttons.
+    const controls = document.querySelector('.battle-controls .controls');
+    controls.innerHTML = '<button class="button" name="saveReplay">Upload and share replay</button>';
+    qol.core.evaluate();
+
+    expect(send).toHaveBeenCalledWith('/savereplay');
+    await Promise.resolve(); // upload confirm resolves on a microtask
+    expect(closeClick).toHaveBeenCalledTimes(1);
+    const job = qol.jobStore.getJob('battle-gen9championsvgc2026regmbbo3-5678');
+    expect(job.upload.status).toBe('done');
+    expect(job.replayUrl).toContain('replay.pokemonshowdown.com');
+  });
+
   it('clicks the native "Skip to end" button after a confirmed forfeit', async () => {
     const qol = loadWithFixture(FIXTURE_ACTIVE);
     qol.CONFIG.dryRun = false;

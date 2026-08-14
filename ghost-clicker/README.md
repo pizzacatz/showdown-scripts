@@ -34,6 +34,7 @@ When a new regulation rolls around, update the format IDs and labels here — th
 
 | Version | Notes |
 |---------|-------|
+| 4.8 | Fix: labels were overwritten with "Battle!" — the client relabels every `button.big` in the main menu, so the `big` class is replaced with inline equivalents of its size rules. |
 | 4.7 | UI: buttons clone the Battle! button exactly (`mainmenu1 big` classes + `<strong>` label) — same color, font, and width under any theme. |
 | 4.6 | UI: fully native buttons — one per menu row, zero custom CSS, relabeled "Reg M-B" / "Reg M-B (Bo3)". |
 | 4.5 | UI: quick-select row centered in the menu column. |
