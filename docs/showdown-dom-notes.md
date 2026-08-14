@@ -72,6 +72,25 @@ This bypasses the chat textarea entirely, which matters because:
 - **Fully local and independent of upload:** the click handler builds an HTML file from the local battle log (data/blob href) — no network. Validates the parallel-jobs decision.
 - Filename: `<TierNameAlnum>-<YYYY>-<MM>-<DD>-<p1id>-<p2id>.html` (e.g. `gen9championsvgc2026regmbbo3-2026-08-13-alice-bob.html`). Native behavior preserved by simply clicking the anchor.
 
+## Battle playback / "Skip to end" (`client-battle.js`)
+
+- While playback lags the received log (e.g. right after a battle ends), the controls show `button[name="skipTurn"]` and `button[name="goToEnd"]` ("Skip to end"). `goToEnd` calls `battle.seekTurn(Infinity)`, snapping playback to the end so the end-of-battle controls render immediately.
+- The button exists **only while playback is behind** — wait for it with a bounded timeout and treat a timeout as "already caught up", not an error.
+- `room.battleEnded` is set when the win message *arrives*, before playback finishes animating; that's why skip-to-end is worth clicking at end detection.
+
+## "Replay uploaded" popup (`client.js` `ReplayUploadedPopup`)
+
+- Structure: a `div.ps-popup` (all classic-client popups share this class) containing `a.replay-link[href="https://replay.pokemonshowdown.com/<id>"]`, a `button[name="copyReplayLink"]`, and a `button[name="close"]` ("Close"). Clicking the named close button through the popup's own dispatcher closes it cleanly.
+- **Scope replay-link matching to `.ps-popup`.** Replay links legitimately appear elsewhere (chat messages, main-menu news, Bo3 wrappers); a document-wide `a[href*="replay.pokemonshowdown.com/"]` match can resolve against the wrong element — before the popup even exists (QoL Battle 1.7 fix).
+
+## Main menu buttons (`client-mainmenu.js`, `client.css`) — Ghost Clicker UI
+
+- Menu rows are `<p>` inside `.menugroup` (`max-width: 270px`, centered; `.menugroup p { margin: 10px 0 }`).
+- `.menugroup .button` = 200px wide, 12pt, blue gradient. Each native button adds a `mainmenuN` class — a pure color-tint hook that themes/custom color schemes restyle.
+- Battle! is `button.mainmenu1.big` with `<strong>Battle!</strong><br /><small>…</small>`; `.big` = 230×50px, 14pt.
+- **Never put the `big` class on injected main-menu buttons:** the client rewrites the label of every `.mainmenu button.big` ("Battle! / Find a random opponent") whenever search state changes. Inline `.big`'s size rules instead and keep the `mainmenuN` class for theme color (Ghost Clicker 4.8 fix).
+- Format selector: `button[name="format"].select.formatselect` — `.select` is the 230px grey dropdown look with a `:after` caret; don't reuse it for action buttons.
+
 ## Mobile
 
 - Classic client has no separate mobile DOM — same markup, CSS-scaled (`.small-layout`). Chat input stays mounted while collapsed.
