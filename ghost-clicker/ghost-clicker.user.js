@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.6
+// @version      4.7
 // @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
 // @match        *://play.pokemonshowdown.com/*
 // @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
@@ -101,10 +101,10 @@
         if (!formatBtn) return;
         if (document.getElementById(CONFIG.controlsContainerId)) return;
 
-        // Fully native rows: one <p><button class="button"> per format, no
-        // styling of our own. The client's own `.menugroup p` (10px row
-        // margin) and `.menugroup .button` (200px width, native padding and
-        // gradient) rules do all the work, dark mode included.
+        // Fully native rows cloned from the Battle! button: same classes
+        // ("button mainmenu1 big") and same <strong> label markup, so every
+        // theme — including custom color schemes that restyle .mainmenuN —
+        // renders these identically to Battle!. No styling of our own.
         const container = document.createElement('div');
         container.id = CONFIG.controlsContainerId;
 
@@ -113,8 +113,10 @@
             const row = document.createElement('p');
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'button';
-            btn.textContent = format.label;
+            btn.className = 'button mainmenu1 big';
+            const strong = document.createElement('strong');
+            strong.textContent = format.label;
+            btn.appendChild(strong);
             btn.addEventListener('click', (e) => {
                 // The client dismisses all popups on any click that bubbles
                 // to the room ("dispatchClickBackground"); without stopping

@@ -5,7 +5,7 @@ Makes **Reg M-B Bo3** the default battle format on Pokémon Showdown — once pe
 ## What it does
 
 - **One-time default:** when the home screen's format selector appears, the script selects Reg M-B Bo3 once. After that it never touches the selector again for the rest of the page load — manually choosing another format sticks. Reloading the page re-applies the default.
-- **Quick-select buttons:** two buttons, **Reg M-B** (Bo1) and **Reg M-B (Bo3)**, are injected as native menu rows directly below the format selector — they carry no custom styling, so the client's own button look (width, padding, colors, dark mode) applies automatically. Each performs a single one-shot selection; clicking one while its format is already active does nothing.
+- **Quick-select buttons:** two buttons, **Reg M-B** (Bo1) and **Reg M-B (Bo3)**, are injected as native menu rows directly below the format selector. They clone the Battle! button's exact classes and markup (`button mainmenu1 big`, `<strong>` label), so they render identically to it under any theme or custom color scheme. Each performs a single one-shot selection; clicking one while its format is already active does nothing.
 - **Event-driven:** a `MutationObserver` reacts when Showdown builds or rebuilds the UI (re-injecting buttons without duplicates). There is no persistent polling loop; short-lived polling only happens inside a selection attempt, capped at 1.5 seconds.
 
 ## Install
@@ -34,6 +34,7 @@ When a new regulation rolls around, update the format IDs and labels here — th
 
 | Version | Notes |
 |---------|-------|
+| 4.7 | UI: buttons clone the Battle! button exactly (`mainmenu1 big` classes + `<strong>` label) — same color, font, and width under any theme. |
 | 4.6 | UI: fully native buttons — one per menu row, zero custom CSS, relabeled "Reg M-B" / "Reg M-B (Bo3)". |
 | 4.5 | UI: quick-select row centered in the menu column. |
 | 4.4 | UI: quick-select buttons moved to their own labeled form row below Format. |
