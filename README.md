@@ -6,7 +6,7 @@ Tampermonkey userscripts that improve quality of life on [Pokémon Showdown](htt
 
 | Script | Version | Description |
 |--------|---------|-------------|
-| [Ghost Clicker](ghost-clicker/) | 4.8 | Replaces Showdown's Random Battle default with **Reg M-B Bo3** (once per page load, never re-enforced) and adds native-styled **Reg M-B** / **Reg M-B (Bo3)** quick-select buttons below the format selector. |
+| [Ghost Clicker](ghost-clicker/) | 4.11 | Replaces Showdown's Random Battle default with **Reg M-B Bo3** (once per page load, never re-enforced) and adds native-styled **Reg M-B** / **Reg M-B (Bo3)** buttons below the format selector that select the format and start searching in one click. |
 | [QoL Battle Tools](qol-battle/) | 1.7 | Arm-then-confirm **Forfeit** button, **instant battle end** (auto skip-to-end on any ending), and automatic **replay archive** — every completed battle is uploaded to Showdown's replay server (confirmation popup auto-dismissed) and downloaded locally, exactly once. |
 
 More scripts will be added over time; each new feature gets its own script and its own PRD in [`docs/`](docs/) rather than growing an existing script.

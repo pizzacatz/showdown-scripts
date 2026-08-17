@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Showdown Ghost Clicker (Format Quick-Select)
 // @namespace    http://tampermonkey.net/
-// @version      4.10
-// @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons for Reg M-B Bo1/Bo3.
+// @version      4.11
+// @description  Defaults the battle format to Reg M-B Bo3 once per page load, with quick-select buttons that pick Reg M-B Bo1/Bo3 and start searching.
 // @match        *://play.pokemonshowdown.com/*
 // @updateURL    https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
 // @downloadURL  https://raw.githubusercontent.com/pizzacatz/showdown-scripts/main/ghost-clicker/ghost-clicker.user.js
@@ -25,6 +25,8 @@
         selectors: {
             formatButton: 'button[name="format"]',
             formatOption: (id) => `button[name="selectFormat"][value="${id}"]`,
+            searchButton: 'button[name="search"]',
+            searchPending: 'p.cancel', // row the client adds while connecting/searching
         },
         controlsContainerId: 'ghost-clicker-quickselect',
         hideStyleId: 'ghost-clicker-hide-format-popup',
@@ -69,37 +71,65 @@
 
     // ------------------------------------------------------------------
     // selectFormat — the single reusable one-shot action. Backs both the
-    // automatic default and the manual quick-select buttons.
+    // automatic default and the manual quick-select buttons. Resolves to
+    // true when the requested format is active afterwards (whether it was
+    // already active or was just selected), false when the selector was
+    // unavailable, another attempt was in flight, or the attempt timed out.
     // ------------------------------------------------------------------
     function selectFormat(formatId) {
-        if (state.macroRunning) return;
+        return new Promise((resolve) => {
+            if (state.macroRunning) return resolve(false);
 
-        const formatBtn = getReadyFormatButton();
-        if (!formatBtn) return;
-        if (formatBtn.value === formatId) return; // already active: no-op
+            const formatBtn = getReadyFormatButton();
+            if (!formatBtn) return resolve(false);
+            if (formatBtn.value === formatId) return resolve(true); // already active
 
-        state.macroRunning = true;
-        setFormatPopupHidden(true);
-        formatBtn.click(); // open the (hidden) format menu
+            state.macroRunning = true;
+            setFormatPopupHidden(true);
+            formatBtn.click(); // open the (hidden) format menu
 
-        const poll = setInterval(() => {
-            const option = document.querySelector(CONFIG.selectors.formatOption(formatId));
-            if (option) {
+            const poll = setInterval(() => {
+                const option = document.querySelector(CONFIG.selectors.formatOption(formatId));
+                if (option) {
+                    option.click(); // closes the popup before it is unhidden below
+                    finish(true);
+                }
+            }, CONFIG.optionPollMs);
+
+            const timeout = setTimeout(() => finish(false), CONFIG.optionTimeoutMs);
+
+            function finish(selected) {
                 clearInterval(poll);
                 clearTimeout(timeout);
-                option.click(); // closes the popup before it is unhidden below
-                finish();
+                setFormatPopupHidden(false);
+                state.macroRunning = false;
+                resolve(selected);
             }
-        }, CONFIG.optionPollMs);
+        });
+    }
 
-        const timeout = setTimeout(finish, CONFIG.optionTimeoutMs);
+    // ------------------------------------------------------------------
+    // startSearch — presses the client's own Battle! button, so the whole
+    // native flow runs (login prompt, "Please select a team", team upload,
+    // the 3 s search delay, Cancel row). Does nothing while a search is
+    // already connecting/searching: the client would ignore the click too.
+    // ------------------------------------------------------------------
+    function startSearch() {
+        const searchBtn = document.querySelector(CONFIG.selectors.searchButton);
+        const form = searchBtn && searchBtn.closest('form');
+        if (!form || form.querySelector(CONFIG.selectors.searchPending)) return;
+        searchBtn.click();
+    }
 
-        function finish() {
-            clearInterval(poll);
-            clearTimeout(timeout);
-            setFormatPopupHidden(false);
-            state.macroRunning = false;
-        }
+    // Quick-select action: pick the format, then search it. Ordering note
+    // for the blank-team repair: the client's re-render inside selectFormat
+    // queues our MutationObserver callback before the promise settles, so
+    // trackAndRepairTeam has already restored the team by the time
+    // startSearch runs — Battle! sees a selected team, not the blank.
+    function selectFormatAndSearch(formatId) {
+        selectFormat(formatId).then((active) => {
+            if (active) startSearch();
+        });
     }
 
     // ------------------------------------------------------------------
@@ -119,7 +149,8 @@
     // ------------------------------------------------------------------
     // ensureControls — injects the quick-select buttons next to the
     // format selector. Idempotent: the stable container ID prevents
-    // duplicates when Showdown rebuilds the UI.
+    // duplicates when Showdown rebuilds the UI. Each button selects its
+    // format and starts searching in one click.
     // ------------------------------------------------------------------
     function ensureControls() {
         const formatBtn = document.querySelector(CONFIG.selectors.formatButton);
@@ -146,7 +177,9 @@
             btn.style.cssText = 'width:230px;height:50px;padding:0;font-size:14pt;';
             const strong = document.createElement('strong');
             strong.textContent = format.label;
-            btn.appendChild(strong);
+            const small = document.createElement('small');
+            small.textContent = 'Search';
+            btn.append(strong, document.createElement('br'), small);
             btn.addEventListener('click', (e) => {
                 // The client dismisses all popups on any click that bubbles
                 // to the room ("dispatchClickBackground"); without stopping
@@ -154,7 +187,7 @@
                 // the same tick and the selection silently fails.
                 e.preventDefault();
                 e.stopPropagation();
-                selectFormat(format.id);
+                selectFormatAndSearch(format.id);
             });
             row.appendChild(btn);
             container.appendChild(row);
@@ -165,6 +198,19 @@
             formatRow.insertAdjacentElement('afterend', container);
         } else {
             formatBtn.insertAdjacentElement('afterend', container);
+        }
+    }
+
+    // Mirror the format selector's usability onto the quick-select buttons:
+    // greyed out (the client's own `.disabled` look) while formats are still
+    // loading or a search is in progress — the states in which a click
+    // would do nothing.
+    function syncControlsState() {
+        const container = document.getElementById(CONFIG.controlsContainerId);
+        if (!container) return;
+        const usable = !!getReadyFormatButton();
+        for (const btn of container.querySelectorAll('button')) {
+            btn.classList.toggle('disabled', !usable);
         }
     }
 
@@ -233,6 +279,7 @@
     function onDomChange() {
         applyDefaultOnce();
         ensureControls();
+        syncControlsState();
         trackAndRepairTeam();
     }
 
