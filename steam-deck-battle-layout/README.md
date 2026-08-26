@@ -9,6 +9,7 @@ A Tampermonkey layout userscript for Pokémon Showdown's classic client. It enla
 - Showdown's native move, switch, target, and team-preview choices occupy a full-height vertical rail in the empty gutter to the battlefield's left.
 - Choice buttons stack vertically and narrow their labels to fit the rail. The rail scrolls independently when a choice state is taller than the screen.
 - Redundant Attack, Switch, and Shift selector labels are hidden. Their choice menus remain open, preventing those label buttons from colliding with gamepad hints.
+- Native HP fills are converted from Showdown's fixed 0–92 pixel calculation to percentages whenever switch controls are rebuilt, keeping bars accurate inside narrow rail buttons.
 - Changes between choice states do not resize or move the battlefield.
 - The QoL Battle Tools toolbar is hidden so its forfeit and replay controls cannot consume the choice rail. Its non-UI automation is unaffected.
 - The live log begins exactly at the battlefield's right edge, eliminating the empty gap.
@@ -40,6 +41,7 @@ The 78% default prioritizes vertical battlefield space on the Steam Deck. At 128
 
 | Version | Notes |
 |---------|-------|
+| 0.7.0 | Preserve accurate switch-menu HP bars by converting Showdown's native 92-pixel fill widths to responsive percentages. |
 | 0.6.0 | Hide redundant Attack/Switch/Shift selector labels to prevent conflicts with gamepad button hints; all actual choices remain visible. |
 | 0.5.0 | Fix overlapping rail labels by converting native choice sections to explicit vertical stacks and resetting inherited label positioning and floats. |
 | 0.4.0 | Move native choices into a full-height vertical rail in the left gutter, hide the separate QoL toolbar, and raise the battlefield to 78% of room height. |

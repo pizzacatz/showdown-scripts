@@ -24,6 +24,32 @@ afterEach(() => {
 });
 
 describe('Steam Deck proportional battle layout', () => {
+  it('converts native 92px HP fills into responsive percentages', () => {
+    const script = loadScript();
+
+    expect(script.nativeHpWidthToPercent('92px')).toBe('100.000%');
+    expect(script.nativeHpWidthToPercent('46px')).toBe('50.000%');
+    expect(script.nativeHpWidthToPercent('1px')).toBe('1.087%');
+    expect(script.nativeHpWidthToPercent('120px')).toBe('100.000%');
+    expect(script.nativeHpWidthToPercent('50%')).toBeNull();
+  });
+
+  it('normalizes switch-menu HP fills without touching unrelated widths', () => {
+    document.body.innerHTML = `
+      <div class="steam-deck-battle-layout">
+        <div class="switchmenu"><button><span class="hpbar"><span style="width:46px"></span></span></button></div>
+      </div>
+      <div class="unrelated"><span style="width:46px"></span></div>
+    `;
+    const script = loadScript();
+    script.normalizeHpBars(document.body);
+
+    const hpFill = document.querySelector('.hpbar > span');
+    expect(hpFill.style.width).toBe('50%');
+    expect(hpFill.dataset.sdNativeHpWidth).toBe('46px');
+    expect(document.querySelector('.unrelated span').style.width).toBe('46px');
+  });
+
   it('uses 78% of Steam Deck height and preserves the battlefield at 16:9', () => {
     const script = loadScript();
     const layout = script.calculateLayout(1280, 800);

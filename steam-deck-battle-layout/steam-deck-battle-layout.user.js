@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Steam Deck Battle Layout
 // @namespace    http://tampermonkey.net/
-// @version      0.6.0
+// @version      0.7.0
 // @description  Proportionally enlarges and centers Pokémon Showdown's battlefield while preserving stable controls and a compact live log.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -32,6 +32,10 @@
     const ROOM_SELECTOR = '[id^="room-battle-"]';
     const LAYOUT_CLASS = 'steam-deck-battle-layout';
     const STYLE_ID = 'steam-deck-battle-layout-style';
+    const NATIVE_HP_BAR_WIDTH = 92;
+    const HP_FILL_SELECTOR =
+        `.${LAYOUT_CLASS} .switchmenu button .hpbar > span, ` +
+        `.${LAYOUT_CLASS} .allyparty button .hpbar > span`;
     const roomObservers = new Map();
 
     function log(message, data) {
@@ -78,6 +82,31 @@
         room.style.setProperty(name, `${Math.max(0, value).toFixed(2)}px`);
     }
 
+    // Showdown writes HP fill widths as pixels against a fixed 92px bar.
+    // Convert that native value to a percentage so it remains accurate after
+    // the containing switch button is narrowed to fit the vertical rail.
+    function nativeHpWidthToPercent(value) {
+        const match = /^\s*(-?\d+(?:\.\d+)?)px\s*$/i.exec(String(value || ''));
+        if (!match) return null;
+        const pixels = Math.min(NATIVE_HP_BAR_WIDTH, Math.max(0, Number(match[1])));
+        return `${(pixels / NATIVE_HP_BAR_WIDTH * 100).toFixed(3)}%`;
+    }
+
+    function normalizeHpFill(fill) {
+        if (!(fill instanceof HTMLElement)) return false;
+        const percent = nativeHpWidthToPercent(fill.style.width);
+        if (percent === null) return false;
+        fill.dataset.sdNativeHpWidth = fill.style.width;
+        fill.style.width = percent;
+        return true;
+    }
+
+    function normalizeHpBars(root) {
+        if (!(root instanceof Element)) return;
+        if (root.matches(HP_FILL_SELECTOR)) normalizeHpFill(root);
+        for (const fill of root.querySelectorAll(HP_FILL_SELECTOR)) normalizeHpFill(fill);
+    }
+
     function updateRoomLayout(room) {
         const bounds = room.getBoundingClientRect();
         if (!bounds.width || !bounds.height) return;
@@ -96,6 +125,7 @@
 
         room.classList.add(LAYOUT_CLASS);
         updateRoomLayout(room);
+        normalizeHpBars(room);
 
         if (typeof ResizeObserver === 'function') {
             const observer = new ResizeObserver(() => updateRoomLayout(room));
@@ -267,7 +297,10 @@
 
         const domObserver = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
-                for (const node of mutation.addedNodes) findRooms(node);
+                for (const node of mutation.addedNodes) {
+                    findRooms(node);
+                    normalizeHpBars(node);
+                }
             }
             pruneRemovedRooms();
         });
@@ -293,6 +326,8 @@
     window.__steamDeckBattleLayout = {
         CONFIG,
         calculateLayout,
+        nativeHpWidthToPercent,
+        normalizeHpBars,
         updateRoomLayout,
         shutdown() {
             core.domObserver.disconnect();
