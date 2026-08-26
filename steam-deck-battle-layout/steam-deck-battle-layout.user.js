@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Steam Deck Battle Layout
 // @namespace    http://tampermonkey.net/
-// @version      0.1.0
+// @version      0.2.0
 // @description  Proportionally enlarges and centers Pokémon Showdown's battlefield while preserving stable controls and a compact live log.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -16,12 +16,10 @@
     // Percentages are relative to the visible battle room, so the layout
     // follows the Steam Deck viewport without being tied to 1280x800 pixels.
     const CONFIG = {
-        // On a 16:10 Steam Deck viewport, 75% of the width is 960px and
-        // a proportional 16:9 battlefield is 540px tall (67.5% of 800px).
-        // Rounding the height region to 68% leaves 32% for stable controls.
-        battleColumnPercent: 75,
-        battleRegionHeightPercent: 68,
-        battleDetailsFontPercent: 82,
+        // Keep the battlefield itself to the top 60% of the room. Its width
+        // follows from the native 16:9 aspect ratio, and the remaining 40%
+        // is permanently reserved for even the tallest switch/control menu.
+        battleRegionHeightPercent: 60,
         debug: false,
     };
 
@@ -53,28 +51,29 @@
     }
 
     function calculateLayout(width, height, config = CONFIG) {
-        const columnRatio = clampPercent(config.battleColumnPercent, 75) / 100;
-        const regionRatio = clampPercent(config.battleRegionHeightPercent, 68) / 100;
-        const battleColumnWidth = width * columnRatio;
+        const regionRatio = clampPercent(config.battleRegionHeightPercent, 60) / 100;
         const battleRegionHeight = height * regionRatio;
         const controlsHeight = height - battleRegionHeight;
 
         const scale = Math.min(
-            battleColumnWidth / NATIVE_BATTLE.width,
+            width / NATIVE_BATTLE.width,
             battleRegionHeight / NATIVE_BATTLE.height
         );
         const renderedWidth = NATIVE_BATTLE.width * scale;
         const renderedHeight = NATIVE_BATTLE.height * scale;
+        const battleLeft = (width - renderedWidth) / 2;
+        const logLeft = battleLeft + renderedWidth;
 
         return {
             scale,
-            battleColumnWidth,
             battleRegionHeight,
             controlsHeight,
-            battleLeft: (battleColumnWidth - renderedWidth) / 2,
+            battleLeft,
             battleTop: (battleRegionHeight - renderedHeight) / 2,
             renderedWidth,
             renderedHeight,
+            logLeft,
+            logWidth: width - logLeft,
         };
     }
 
@@ -90,14 +89,10 @@
         room.style.setProperty('--sd-battle-scale', layout.scale.toFixed(5));
         setPixelVariable(room, '--sd-battle-left', layout.battleLeft);
         setPixelVariable(room, '--sd-battle-top', layout.battleTop);
-        setPixelVariable(room, '--sd-battle-column-width', layout.battleColumnWidth);
+        setPixelVariable(room, '--sd-battle-width', layout.renderedWidth);
+        setPixelVariable(room, '--sd-log-left', layout.logLeft);
         setPixelVariable(room, '--sd-controls-top', layout.battleRegionHeight);
         setPixelVariable(room, '--sd-controls-height', layout.controlsHeight);
-        room.style.setProperty(
-            '--sd-log-details-font-size',
-            `${clampPercent(CONFIG.battleDetailsFontPercent, 82)}%`
-        );
-
         log('layout updated', layout);
     }
 
@@ -142,11 +137,11 @@
 
             .${LAYOUT_CLASS} .battle-controls {
                 box-sizing: border-box;
-                top: var(--sd-controls-top, 68%) !important;
+                top: var(--sd-controls-top, 60%) !important;
                 bottom: 0 !important;
-                left: 0 !important;
-                width: var(--sd-battle-column-width, 75%) !important;
-                height: var(--sd-controls-height, 32%) !important;
+                left: var(--sd-battle-left, 0px) !important;
+                width: var(--sd-battle-width, 100%) !important;
+                height: var(--sd-controls-height, 40%) !important;
                 overflow-x: hidden;
                 overflow-y: auto;
                 padding-top: 6px;
@@ -163,13 +158,9 @@
             .${LAYOUT_CLASS} .battle-log,
             .${LAYOUT_CLASS} .battle-log-add,
             .${LAYOUT_CLASS} .battle-userlist {
-                left: var(--sd-battle-column-width, 75%) !important;
+                left: var(--sd-log-left, 75%) !important;
             }
 
-            .${LAYOUT_CLASS} .battle-log .battle-history {
-                font-size: var(--sd-log-details-font-size, 82%) !important;
-                line-height: 1.2;
-            }
         `;
         (document.head || document.documentElement).appendChild(style);
     }

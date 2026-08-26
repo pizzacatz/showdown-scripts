@@ -24,26 +24,30 @@ afterEach(() => {
 });
 
 describe('Steam Deck proportional battle layout', () => {
-  it('allocates room dimensions by percentage and preserves 16:9', () => {
+  it('reserves 40% for controls and preserves the battlefield at 16:9', () => {
     const script = loadScript();
     const layout = script.calculateLayout(1280, 800);
 
-    expect(layout.battleColumnWidth).toBeCloseTo(960);
-    expect(layout.battleRegionHeight).toBeCloseTo(544);
-    expect(layout.controlsHeight).toBeCloseTo(256);
+    expect(layout.battleRegionHeight).toBeCloseTo(480);
+    expect(layout.controlsHeight).toBeCloseTo(320);
+    expect(layout.renderedWidth).toBeCloseTo(853.333, 2);
+    expect(layout.renderedHeight).toBeCloseTo(480);
     expect(layout.renderedWidth / layout.renderedHeight).toBeCloseTo(16 / 9);
-    expect(layout.renderedWidth).toBeLessThanOrEqual(layout.battleColumnWidth);
-    expect(layout.renderedHeight).toBeLessThanOrEqual(layout.battleRegionHeight);
   });
 
-  it('centers the battlefield in its allocated region', () => {
+  it('centers the battlefield across the room and places the log directly beside it', () => {
     const script = loadScript();
     const layout = script.calculateLayout(1180, 760);
 
     expect(layout.battleLeft * 2 + layout.renderedWidth)
-      .toBeCloseTo(layout.battleColumnWidth);
+      .toBeCloseTo(1180);
     expect(layout.battleTop * 2 + layout.renderedHeight)
       .toBeCloseTo(layout.battleRegionHeight);
+    expect(layout.logLeft).toBeCloseTo(layout.battleLeft + layout.renderedWidth);
+    expect(layout.logWidth).toBeCloseTo(layout.battleLeft);
+    expect(layout.logWidth / 1180).toBeLessThan(0.2);
+    expect(document.getElementById('steam-deck-battle-layout-style').textContent)
+      .not.toContain('font-size');
   });
 
   it('sizes from room dimensions rather than control contents', () => {
@@ -66,6 +70,7 @@ describe('Steam Deck proportional battle layout', () => {
     script.updateRoomLayout(room);
 
     expect(room.style.getPropertyValue('--sd-battle-scale')).toBe(before);
-    expect(room.style.getPropertyValue('--sd-controls-height')).toBe('243.20px');
+    expect(room.style.getPropertyValue('--sd-controls-height')).toBe('304.00px');
+    expect(room.style.getPropertyValue('--sd-log-left')).toBe('995.33px');
   });
 });
