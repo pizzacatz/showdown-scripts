@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Steam Deck Battle Layout
 // @namespace    http://tampermonkey.net/
-// @version      0.2.0
+// @version      0.3.0
 // @description  Proportionally enlarges and centers Pokémon Showdown's battlefield while preserving stable controls and a compact live log.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -16,10 +16,10 @@
     // Percentages are relative to the visible battle room, so the layout
     // follows the Steam Deck viewport without being tied to 1280x800 pixels.
     const CONFIG = {
-        // Keep the battlefield itself to the top 60% of the room. Its width
-        // follows from the native 16:9 aspect ratio, and the remaining 40%
-        // is permanently reserved for even the tallest switch/control menu.
-        battleRegionHeightPercent: 60,
+        // Maximize the battlefield while permanently reserving the bottom
+        // quarter for Showdown's native move/switch choices. Extra userscript
+        // controls are allowed to overflow rather than shrinking the arena.
+        battleRegionHeightPercent: 75,
         debug: false,
     };
 
@@ -51,7 +51,7 @@
     }
 
     function calculateLayout(width, height, config = CONFIG) {
-        const regionRatio = clampPercent(config.battleRegionHeightPercent, 60) / 100;
+        const regionRatio = clampPercent(config.battleRegionHeightPercent, 75) / 100;
         const battleRegionHeight = height * regionRatio;
         const controlsHeight = height - battleRegionHeight;
 
@@ -137,11 +137,11 @@
 
             .${LAYOUT_CLASS} .battle-controls {
                 box-sizing: border-box;
-                top: var(--sd-controls-top, 60%) !important;
+                top: var(--sd-controls-top, 75%) !important;
                 bottom: 0 !important;
                 left: var(--sd-battle-left, 0px) !important;
                 width: var(--sd-battle-width, 100%) !important;
-                height: var(--sd-controls-height, 40%) !important;
+                height: var(--sd-controls-height, 25%) !important;
                 overflow-x: hidden;
                 overflow-y: auto;
                 padding-top: 6px;

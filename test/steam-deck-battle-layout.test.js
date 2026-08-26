@@ -24,14 +24,14 @@ afterEach(() => {
 });
 
 describe('Steam Deck proportional battle layout', () => {
-  it('reserves 40% for controls and preserves the battlefield at 16:9', () => {
+  it('reserves 25% for native controls and preserves the battlefield at 16:9', () => {
     const script = loadScript();
     const layout = script.calculateLayout(1280, 800);
 
-    expect(layout.battleRegionHeight).toBeCloseTo(480);
-    expect(layout.controlsHeight).toBeCloseTo(320);
-    expect(layout.renderedWidth).toBeCloseTo(853.333, 2);
-    expect(layout.renderedHeight).toBeCloseTo(480);
+    expect(layout.battleRegionHeight).toBeCloseTo(600);
+    expect(layout.controlsHeight).toBeCloseTo(200);
+    expect(layout.renderedWidth).toBeCloseTo(1066.667, 2);
+    expect(layout.renderedHeight).toBeCloseTo(600);
     expect(layout.renderedWidth / layout.renderedHeight).toBeCloseTo(16 / 9);
   });
 
@@ -70,7 +70,7 @@ describe('Steam Deck proportional battle layout', () => {
     script.updateRoomLayout(room);
 
     expect(room.style.getPropertyValue('--sd-battle-scale')).toBe(before);
-    expect(room.style.getPropertyValue('--sd-controls-height')).toBe('304.00px');
-    expect(room.style.getPropertyValue('--sd-log-left')).toBe('995.33px');
+    expect(room.style.getPropertyValue('--sd-controls-height')).toBe('190.00px');
+    expect(room.style.getPropertyValue('--sd-log-left')).toBe('1096.67px');
   });
 });

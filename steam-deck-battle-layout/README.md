@@ -4,10 +4,10 @@ A Tampermonkey layout userscript for Pokémon Showdown's classic client. It enla
 
 ## Current behavior
 
-- The top 60% of the room is allocated to the animated battlefield.
+- The top 75% of the room is allocated to the animated battlefield.
 - The battlefield is scaled uniformly from Showdown's native 640×360 canvas and centered across the entire room.
-- The bottom 40% is always reserved for controls. Move, switch, target, and team-preview changes do not resize the battlefield.
-- If controls ever exceed their reserved region, only the control region scrolls; the battlefield remains fixed.
+- The bottom 25% is always reserved for Showdown's native move and switch choices. Changes between move, switch, target, and team-preview states do not resize the battlefield.
+- If extra userscript controls such as the QoL forfeit toolbar exceed the reserved region, only the control region scrolls; the battlefield remains fixed.
 - The controls are aligned to the centered battlefield's left and right edges.
 - The live log begins exactly at the battlefield's right edge, eliminating the empty gap.
 - The log width is derived from the centered battlefield rather than assigned a fixed percentage; on a 1280×800 room it is approximately 17% wide.
@@ -27,17 +27,18 @@ The editable `CONFIG` object is near the top of the userscript:
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `battleRegionHeightPercent` | `60` | Percentage of room height occupied by the battlefield region. Controls receive the remainder. |
+| `battleRegionHeightPercent` | `75` | Percentage of room height occupied by the battlefield region. Native controls receive the remainder. |
 | `debug` | `false` | Log calculated layouts to the browser console. |
 
 The native `640×360` values in the script describe Showdown's source canvas. They do not hardcode the displayed size; the displayed battlefield is calculated from the percentages above.
 
-The 60% default is calibrated to the Steam Deck's 16:10 viewport. At 1280×800, the battlefield renders at approximately 853×480 and is centered at `x = 213`. The live log starts at its right edge and uses the final 213 pixels, while the bottom 320 pixels remain available for controls.
+The 75% default prioritizes vertical battlefield space on the Steam Deck. At 1280×800, the battlefield renders at approximately 1067×600 and is centered at `x = 107`. The live log starts at its right edge and uses the final 107 pixels, while the bottom 200 pixels remain available for native choices.
 
 ## Version history
 
 | Version | Notes |
 |---------|-------|
+| 0.3.0 | Prioritize the animated battlefield: use 75% of room height and reserve only the bottom 25% for native move/switch choices; extra userscript controls may scroll. |
 | 0.2.0 | Center the battlefield across the full room, reduce its height, expand the stable control region, narrow the original-size log for more wrapping, and remove the battlefield-to-log gap. |
 | 0.1.0 | Initial proportional Steam Deck layout. |
 
