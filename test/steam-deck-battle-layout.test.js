@@ -87,7 +87,7 @@ describe('Steam Deck proportional battle layout', () => {
     expect(styles).toContain('.qol-battle-toolbar');
     expect(styles).toContain('display: none !important');
     expect(styles).toContain('.battle-controls .moveselect');
-    expect(styles).toContain('position: static !important');
+    expect(styles).toMatch(/\.battle-controls \.moveselect,[\s\S]*?display: none !important/);
     expect(styles).toContain('flex-direction: column');
     expect(styles).toContain('clear: both');
   });

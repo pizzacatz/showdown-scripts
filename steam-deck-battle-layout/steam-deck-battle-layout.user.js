@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Steam Deck Battle Layout
 // @namespace    http://tampermonkey.net/
-// @version      0.5.0
+// @version      0.6.0
 // @description  Proportionally enlarges and centers Pokémon Showdown's battlefield while preserving stable controls and a compact live log.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -196,33 +196,13 @@
             .${LAYOUT_CLASS} .battle-controls .moveselect,
             .${LAYOUT_CLASS} .battle-controls .switchselect,
             .${LAYOUT_CLASS} .battle-controls .shiftselect {
-                box-sizing: border-box;
-                position: static !important;
-                display: block !important;
-                clear: both;
-                width: 100%;
-                margin: 6px 0 2px;
+                display: none !important;
             }
 
             .${LAYOUT_CLASS} .battle-controls .movemenu,
             .${LAYOUT_CLASS} .battle-controls .switchmenu,
             .${LAYOUT_CLASS} .battle-controls .allyparty {
                 clear: both;
-            }
-
-            .${LAYOUT_CLASS} .battle-controls .moveselect button,
-            .${LAYOUT_CLASS} .battle-controls .switchselect button,
-            .${LAYOUT_CLASS} .battle-controls .shiftselect button {
-                box-sizing: border-box;
-                position: static !important;
-                display: block;
-                width: 100%;
-                min-height: 26px;
-                margin: 0;
-                padding: 5px 2px 4px;
-                font-size: 9pt;
-                line-height: 1.1;
-                border-bottom: 1px solid rgba(85, 85, 85, 0.45);
             }
 
             .${LAYOUT_CLASS} .battle-controls .movebutton,
