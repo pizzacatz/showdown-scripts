@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Showdown Steam Deck Main Menu Layout
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
-// @description  Centers Pokémon Showdown's classic-client main navigation for a Steam Deck-friendly home screen.
+// @version      1.1.0
+// @description  Centers Pokémon Showdown's classic-client navigation tabs for a Steam Deck-friendly layout.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
 // @run-at       document-end
@@ -21,45 +21,26 @@
         const style = document.createElement('style');
         style.id = STYLE_ID;
         style.textContent = `
-            /* Showdown switches to its own narrow layout below this width. */
+            /* Center the persistent Home / Teambuilder / Ladder / room tabs.
+               Equal margins protect the logo and user controls while making
+               the usable tab region geometrically centered in the viewport. */
             @media (min-width: 896px) {
-                #mainmenu > .mainmenuwrapper > .leftmenu {
+                #header .tabbar.maintabbar {
                     box-sizing: border-box;
+                    margin-left: 165px !important;
+                    margin-right: 165px !important;
+                }
+
+                #header .tabbar.maintabbar > .inner {
                     display: flex;
-                    flex-direction: column;
-                    width: 324px !important;
-                    margin-left: auto !important;
-                    margin-right: auto !important;
-                }
-
-                #mainmenu > .mainmenuwrapper > .leftmenu > .mainmenu {
-                    box-sizing: border-box;
-                    order: 1;
+                    align-items: flex-end;
+                    justify-content: center;
                     width: 100%;
                 }
 
-                /* The activity/news box is absolutely positioned beside the
-                   navigation by default. Put it below the centered column so
-                   the two areas can never overlap. */
-                #mainmenu > .mainmenuwrapper > .leftmenu > .activitymenu {
-                    box-sizing: border-box;
-                    position: static !important;
-                    order: 2;
-                    width: 100%;
-                    margin: 0;
-                    padding: 0 0 8px;
-                }
-
-                /* Chat-room navigation is a separate right-side container in
-                   the classic client. Stack it below the centered left menu
-                   instead of leaving a second control at the far edge. */
-                #mainmenu > .mainmenuwrapper > .rightmenu {
-                    box-sizing: border-box;
-                    position: static !important;
-                    width: 324px !important;
-                    margin-left: auto !important;
-                    margin-right: auto !important;
-                    padding-bottom: 51px;
+                #header .tabbar.maintabbar > .inner > ul {
+                    float: none;
+                    flex: 0 0 auto;
                 }
             }
         `;

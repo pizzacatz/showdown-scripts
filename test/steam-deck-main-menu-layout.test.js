@@ -16,16 +16,15 @@ function loadScript() {
 beforeEach(() => {
   document.head.innerHTML = '';
   document.body.innerHTML = `
-    <div class="ps-room scrollable" id="mainmenu">
-      <div class="mainmenuwrapper">
-        <div class="leftmenu">
-          <div class="activitymenu"><div class="pmbox">News</div></div>
-          <div class="mainmenu"><button>Teambuilder</button></div>
+    <div id="header" class="header">
+      <div class="tabbar maintabbar">
+        <div class="inner">
+          <ul><li><a class="roomtab button">Home</a></li></ul>
+          <ul><li><a class="roomtab button">Battle</a></li></ul>
         </div>
-        <div class="rightmenu"><button>Join chat</button></div>
       </div>
     </div>
-    <div class="ps-room" id="room-battle-test"><div class="leftmenu"></div></div>
+    <div class="ps-room scrollable" id="mainmenu"></div>
   `;
   delete window.__steamDeckMainMenuLayout;
 });
@@ -40,23 +39,25 @@ describe('Steam Deck main-menu layout', () => {
     expect(document.querySelectorAll(`#${first.STYLE_ID}`)).toHaveLength(1);
   });
 
-  it('centers only the classic main-menu navigation at desktop width', () => {
+  it('centers the persistent classic-client tab bar at desktop width', () => {
     const { STYLE_ID } = loadScript();
     const styles = document.getElementById(STYLE_ID).textContent;
 
     expect(styles).toContain('@media (min-width: 896px)');
-    expect(styles).toContain('#mainmenu > .mainmenuwrapper > .leftmenu');
-    expect(styles).toContain('margin-left: auto !important');
-    expect(styles).toContain('margin-right: auto !important');
-    expect(styles).not.toContain('#room-battle-test');
+    expect(styles).toContain('#header .tabbar.maintabbar');
+    expect(styles).toContain('margin-left: 165px !important');
+    expect(styles).toContain('margin-right: 165px !important');
+    expect(styles).not.toContain('#mainmenu >');
   });
 
-  it('moves auxiliary panels into normal flow to prevent overlap', () => {
+  it('centers all tab lists as a flex group without changing page content', () => {
     const { STYLE_ID } = loadScript();
     const styles = document.getElementById(STYLE_ID).textContent;
 
-    expect(styles).toContain('.leftmenu > .activitymenu');
-    expect(styles).toContain('.mainmenuwrapper > .rightmenu');
-    expect(styles.match(/position: static !important/g)).toHaveLength(2);
+    expect(styles).toContain('.tabbar.maintabbar > .inner');
+    expect(styles).toContain('justify-content: center');
+    expect(styles).toContain('.inner > ul');
+    expect(styles).toContain('float: none');
+    expect(styles).not.toContain('.leftmenu');
   });
 });

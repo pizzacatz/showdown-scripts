@@ -1,15 +1,14 @@
 # Steam Deck Main Menu Layout
 
-A focused Tampermonkey userscript that centers Pokémon Showdown's classic-client main navigation on Steam Deck-sized desktop viewports.
+A focused Tampermonkey userscript that centers Pokémon Showdown's persistent classic-client navigation tabs on Steam Deck-sized desktop viewports.
 
 ## Behavior
 
-- Centers the main navigation column containing the battle form, Teambuilder, Ladder, Tournaments, Watch a Battle, Find a User, Friends, and Resources.
-- Keeps the native 324-pixel navigation width and Showdown's original button styling.
-- Places the activity/news panel below the navigation so its original absolute positioning cannot overlap the centered column.
-- Centers the separate chat-room navigation below the main column rather than leaving it at the far-right edge.
-- Applies only to the home room (`#mainmenu`) at widths of 896 pixels or more. Showdown's native narrow/mobile layout remains untouched.
-- Does not modify battle rooms, the teambuilder, ladder pages, popups, or room tabs.
+- Centers the persistent header bar containing Home, Teambuilder, Ladder, Resources, and currently open room tabs.
+- Uses equal 165-pixel left and right margins so the tab region is centered while remaining clear of the Pokémon Showdown logo and user controls.
+- Preserves Showdown's original tab styling, actions, close buttons, notification states, and overflow menu.
+- Applies at widths of 896 pixels or more. Showdown's native narrow/mobile tab layout remains untouched.
+- Does not reposition the home-page battle form, news, chat button, battle rooms, or page content.
 
 ## Install
 
@@ -19,4 +18,11 @@ This script targets the live classic client. The `/beta` client uses different m
 
 ## Why this is separate
 
-Main-menu positioning and battle-room positioning have unrelated DOM structures and lifecycles. Keeping this separate from Steam Deck Battle Layout lets either customization be updated, disabled, or installed independently.
+Header-navigation positioning and battle-room positioning have unrelated DOM structures and lifecycles. Keeping this separate from Steam Deck Battle Layout lets either customization be updated, disabled, or installed independently.
+
+## Version history
+
+| Version | Notes |
+|---------|-------|
+| 1.1.0 | Correct the target to the persistent client navigation tabs and center them inside equal logo/user margins. |
+| 1.0.0 | Initially targeted the home-page button column. |
