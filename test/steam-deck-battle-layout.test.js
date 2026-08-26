@@ -57,8 +57,14 @@ describe('Steam Deck proportional battle layout', () => {
         <div class="battle-log-add"></div>
         <div class="battle-controls">
           <div class="controls">
-            <div class="movemenu"><button class="movebutton">Move</button></div>
-            <div class="switchmenu"><button>Switch</button></div>
+            <div class="movecontrols">
+              <div class="moveselect"><button>Attack</button></div>
+              <div class="movemenu"><button class="movebutton">Move</button></div>
+            </div>
+            <div class="switchcontrols">
+              <div class="switchselect"><button>Switch</button></div>
+              <div class="switchmenu"><button>Pokémon</button></div>
+            </div>
           </div>
           <div class="qol-battle-toolbar"><button>Forfeit</button></div>
         </div>
@@ -80,5 +86,9 @@ describe('Steam Deck proportional battle layout', () => {
     expect(styles).toContain('width: var(--sd-battle-left, 10%)');
     expect(styles).toContain('.qol-battle-toolbar');
     expect(styles).toContain('display: none !important');
+    expect(styles).toContain('.battle-controls .moveselect');
+    expect(styles).toContain('position: static !important');
+    expect(styles).toContain('flex-direction: column');
+    expect(styles).toContain('clear: both');
   });
 });
