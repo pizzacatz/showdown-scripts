@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createSettings, loadBindings, saveBindings, rebind, intentToButton, STORAGE_KEY, PANEL_ID } from '../src/settings.js';
+import { createSettings, loadBindings, saveBindings, loadHintsEnabled, saveHintsEnabled, rebind, intentToButton, STORAGE_KEY, HINTS_STORAGE_KEY, PANEL_ID } from '../src/settings.js';
 import { DEFAULT_BINDINGS, BUTTON } from '../src/gamepad.js';
 
 const memStorage = () => { const m = new Map(); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
@@ -10,6 +10,14 @@ describe('bindings storage', () => {
     const st = memStorage(); st.setItem(STORAGE_KEY, '{nope');
     expect(loadBindings(st)).toEqual(DEFAULT_BINDINGS);
     st.setItem(STORAGE_KEY, JSON.stringify({ 3: 'NOT_AN_INTENT' }));
+    expect(loadBindings(st)).toEqual(DEFAULT_BINDINGS);
+  });
+  it('defaults hints on and persists the hint toggle independently', () => {
+    const st = memStorage();
+    expect(loadHintsEnabled(st)).toBe(true);
+    saveHintsEnabled(st, false);
+    expect(st.getItem(HINTS_STORAGE_KEY)).toBe('false');
+    expect(loadHintsEnabled(st)).toBe(false);
     expect(loadBindings(st)).toEqual(DEFAULT_BINDINGS);
   });
   it('round-trips and drops unknown intents', () => {
@@ -38,13 +46,19 @@ describe('settings panel', () => {
     const panel = document.getElementById(PANEL_ID);
     expect(panel).toBeTruthy();
     expect(panel.querySelectorAll('tr[data-intent]').length).toBe(15);
+    const hints = panel.querySelector('[data-setting="showHints"]');
+    expect(hints.checked).toBe(true);
+    hints.click();
+    expect(s.showHints).toBe(false);
+    expect(loadHintsEnabled(st)).toBe(false);
+    expect(changes.length).toBe(1);
     panel.querySelector('button[data-rebind="GIMMICK"]').click();
     expect(s.isCapturing()).toBe(true);
     expect(s.onRawButton(BUTTON.LT)).toBe(true);
     expect(s.isCapturing()).toBe(false);
     expect(s.labelFor('GIMMICK')).toBe('LT');
     expect(loadBindings(st)[BUTTON.LT]).toBe('GIMMICK');
-    expect(changes.length).toBe(1);
+    expect(changes.length).toBe(2);
     expect(s.onRawButton(BUTTON.A)).toBe(false); // not capturing → not consumed
     panel.querySelector('button[data-reset]').click();
     expect(s.labelFor('GIMMICK')).toBe('RB');

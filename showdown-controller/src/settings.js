@@ -4,6 +4,7 @@
 import { DEFAULT_BINDINGS, INTENTS, buttonLabel, BUTTON_LABELS } from './gamepad.js';
 
 export const STORAGE_KEY = 'showdown-gamepad.bindings.v1';
+export const HINTS_STORAGE_KEY = 'showdown-gamepad.hints.v1';
 export const PANEL_ID = 'sgp-settings';
 
 /** intent → button index (inverse of a bindings map). */
@@ -31,6 +32,19 @@ export function loadBindings(storage) {
 
 export function saveBindings(storage, bindings) {
   try { storage && storage.setItem(STORAGE_KEY, JSON.stringify(bindings)); } catch (_) { /* ignore */ }
+}
+
+export function loadHintsEnabled(storage) {
+  try {
+    const raw = storage && storage.getItem(HINTS_STORAGE_KEY);
+    return raw === null ? true : raw !== 'false';
+  } catch (_) {
+    return true;
+  }
+}
+
+export function saveHintsEnabled(storage, enabled) {
+  try { storage && storage.setItem(HINTS_STORAGE_KEY, String(!!enabled)); } catch (_) { /* ignore */ }
 }
 
 /** Return a new bindings map with `button` assigned to `intent` (unbinding it elsewhere). */
@@ -72,6 +86,7 @@ export const PANEL_CSS = `
  */
 export function createSettings({ doc = document, storage = (typeof localStorage !== 'undefined' ? localStorage : null), onChange = () => {} } = {}) {
   let bindings = loadBindings(storage);
+  let hintsEnabled = loadHintsEnabled(storage);
   let panel = null;
   let listeningFor = null;
 
@@ -99,6 +114,7 @@ export function createSettings({ doc = document, storage = (typeof localStorage 
     panel.innerHTML = `
       <h3>🎮 Gamepad bindings</h3>
       <table>${rows}</table>
+      <label><input type="checkbox" data-setting="showHints"${hintsEnabled ? ' checked' : ''}> Show button label pills</label>
       <div class="foot">
         <button type="button" data-reset>Reset defaults</button>
         <button type="button" data-close>Close</button>
@@ -127,6 +143,12 @@ export function createSettings({ doc = document, storage = (typeof localStorage 
           close();
         }
       });
+      panel.addEventListener('change', e => {
+        if (!e.target.matches('[data-setting="showHints"]')) return;
+        hintsEnabled = !!e.target.checked;
+        saveHintsEnabled(storage, hintsEnabled);
+        onChange(bindings);
+      });
       (doc.body || doc.documentElement).appendChild(panel);
     }
     render();
@@ -139,6 +161,13 @@ export function createSettings({ doc = document, storage = (typeof localStorage 
 
   return {
     get bindings() { return bindings; },
+    get showHints() { return hintsEnabled; },
+    setShowHints(enabled) {
+      hintsEnabled = !!enabled;
+      saveHintsEnabled(storage, hintsEnabled);
+      render();
+      onChange(bindings);
+    },
     labelFor,
     open, close,
     toggle() { panel ? close() : open(); },

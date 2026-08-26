@@ -46,7 +46,10 @@ support can capture it; Chrome is the most reliable).
 **Remapping:** click the 🎮 status pill (bottom-right) → *Rebind* on any row →
 press the controller button you want. Bindings are saved in the browser
 (localStorage) and the on-screen hints follow. *Reset defaults* restores the
-table above.
+table above. The settings panel also includes **Show button label pills**;
+uncheck it to remove the `(RB)`, `(LB)`, `(Y)`, and `(Select)` labels while
+leaving the cursor highlights, borders, and active-group styling in place.
+This preference is saved independently in localStorage.
 
 Team preview, move select, doubles target select, forced switches, the
 "waiting for opponent" state, the playback buttons and the end-of-battle
@@ -102,7 +105,7 @@ a browser.
 
 ```sh
 npm install
-npm test          # unit tests (79)
+npm test          # unit tests (80)
 npm run build     # dist/showdown-gamepad.user.js
 npm run recon -- --script dist/showdown-gamepad.user.js   # e2e vs a LOCAL server
 ```
