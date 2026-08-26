@@ -43,7 +43,7 @@ describe('Steam Deck main-menu layout', () => {
     const { STYLE_ID } = loadScript();
     const styles = document.getElementById(STYLE_ID).textContent;
 
-    expect(styles).toContain('@media (min-width: 896px)');
+    expect(styles).toContain('@media (min-width: 640px)');
     expect(styles).toContain('#header .tabbar.maintabbar');
     expect(styles).toContain('margin-left: 165px !important');
     expect(styles).toContain('margin-right: 165px !important');
@@ -56,6 +56,8 @@ describe('Steam Deck main-menu layout', () => {
 
     expect(styles).toContain('.tabbar.maintabbar > .inner');
     expect(styles).toContain('justify-content: center');
+    expect(styles).toContain('display: flex !important');
+    expect(styles).toContain('width: 100% !important');
     expect(styles).toContain('.inner > ul');
     expect(styles).toContain('float: none');
     expect(styles).not.toContain('.leftmenu');

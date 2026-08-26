@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Steam Deck Main Menu Layout
 // @namespace    http://tampermonkey.net/
-// @version      1.1.0
+// @version      1.2.0
 // @description  Centers Pokémon Showdown's classic-client navigation tabs for a Steam Deck-friendly layout.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -24,7 +24,7 @@
             /* Center the persistent Home / Teambuilder / Ladder / room tabs.
                Equal margins protect the logo and user controls while making
                the usable tab region geometrically centered in the viewport. */
-            @media (min-width: 896px) {
+            @media (min-width: 640px) {
                 #header .tabbar.maintabbar {
                     box-sizing: border-box;
                     margin-left: 165px !important;
@@ -32,15 +32,15 @@
                 }
 
                 #header .tabbar.maintabbar > .inner {
-                    display: flex;
-                    align-items: flex-end;
-                    justify-content: center;
-                    width: 100%;
+                    display: flex !important;
+                    align-items: flex-end !important;
+                    justify-content: center !important;
+                    width: 100% !important;
                 }
 
                 #header .tabbar.maintabbar > .inner > ul {
-                    float: none;
-                    flex: 0 0 auto;
+                    float: none !important;
+                    flex: 0 0 auto !important;
                 }
             }
         `;
