@@ -4,11 +4,12 @@ A Tampermonkey layout userscript for Pokémon Showdown's classic client. It enla
 
 ## Current behavior
 
-- The top 75% of the room is allocated to the animated battlefield.
+- The animated battlefield uses up to 78% of the room height.
 - The battlefield is scaled uniformly from Showdown's native 640×360 canvas and centered across the entire room.
-- The bottom 25% is always reserved for Showdown's native move and switch choices. Changes between move, switch, target, and team-preview states do not resize the battlefield.
-- If extra userscript controls such as the QoL forfeit toolbar exceed the reserved region, only the control region scrolls; the battlefield remains fixed.
-- The controls are aligned to the centered battlefield's left and right edges.
+- Showdown's native move, switch, target, and team-preview choices occupy a full-height vertical rail in the empty gutter to the battlefield's left.
+- Choice buttons stack vertically and narrow their labels to fit the rail. The rail scrolls independently when a choice state is taller than the screen.
+- Changes between choice states do not resize or move the battlefield.
+- The QoL Battle Tools toolbar is hidden so its forfeit and replay controls cannot consume the choice rail. Its non-UI automation is unaffected.
 - The live log begins exactly at the battlefield's right edge, eliminating the empty gap.
 - The log width is derived from the centered battlefield rather than assigned a fixed percentage; on a 1280×800 room it is approximately 17% wide.
 - The live log retains Showdown's original font sizes and wraps text more aggressively inside the narrower column.
@@ -27,17 +28,18 @@ The editable `CONFIG` object is near the top of the userscript:
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `battleRegionHeightPercent` | `75` | Percentage of room height occupied by the battlefield region. Native controls receive the remainder. |
+| `battleRegionHeightPercent` | `78` | Maximum percentage of room height occupied by the battlefield. Width can still be the limiting dimension. |
 | `debug` | `false` | Log calculated layouts to the browser console. |
 
 The native `640×360` values in the script describe Showdown's source canvas. They do not hardcode the displayed size; the displayed battlefield is calculated from the percentages above.
 
-The 75% default prioritizes vertical battlefield space on the Steam Deck. At 1280×800, the battlefield renders at approximately 1067×600 and is centered at `x = 107`. The live log starts at its right edge and uses the final 107 pixels, while the bottom 200 pixels remain available for native choices.
+The 78% default prioritizes vertical battlefield space on the Steam Deck. At 1280×800, the battlefield renders at approximately 1109×624 and is centered at `x = 85`. The left 85 pixels become the choice rail, and the live log begins at the battlefield's right edge in the matching right gutter.
 
 ## Version history
 
 | Version | Notes |
 |---------|-------|
+| 0.4.0 | Move native choices into a full-height vertical rail in the left gutter, hide the separate QoL toolbar, and raise the battlefield to 78% of room height. |
 | 0.3.0 | Prioritize the animated battlefield: use 75% of room height and reserve only the bottom 25% for native move/switch choices; extra userscript controls may scroll. |
 | 0.2.0 | Center the battlefield across the full room, reduce its height, expand the stable control region, narrow the original-size log for more wrapping, and remove the battlefield-to-log gap. |
 | 0.1.0 | Initial proportional Steam Deck layout. |

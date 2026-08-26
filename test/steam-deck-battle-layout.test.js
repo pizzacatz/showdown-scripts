@@ -24,14 +24,13 @@ afterEach(() => {
 });
 
 describe('Steam Deck proportional battle layout', () => {
-  it('reserves 25% for native controls and preserves the battlefield at 16:9', () => {
+  it('uses 78% of Steam Deck height and preserves the battlefield at 16:9', () => {
     const script = loadScript();
     const layout = script.calculateLayout(1280, 800);
 
-    expect(layout.battleRegionHeight).toBeCloseTo(600);
-    expect(layout.controlsHeight).toBeCloseTo(200);
-    expect(layout.renderedWidth).toBeCloseTo(1066.667, 2);
-    expect(layout.renderedHeight).toBeCloseTo(600);
+    expect(layout.battleRegionHeight).toBeCloseTo(624);
+    expect(layout.renderedWidth).toBeCloseTo(1109.333, 2);
+    expect(layout.renderedHeight).toBeCloseTo(624);
     expect(layout.renderedWidth / layout.renderedHeight).toBeCloseTo(16 / 9);
   });
 
@@ -46,8 +45,8 @@ describe('Steam Deck proportional battle layout', () => {
     expect(layout.logLeft).toBeCloseTo(layout.battleLeft + layout.renderedWidth);
     expect(layout.logWidth).toBeCloseTo(layout.battleLeft);
     expect(layout.logWidth / 1180).toBeLessThan(0.2);
-    expect(document.getElementById('steam-deck-battle-layout-style').textContent)
-      .not.toContain('font-size');
+    const styles = document.getElementById('steam-deck-battle-layout-style').textContent;
+    expect(styles).not.toMatch(/\.battle-log[^{}]*\{[^}]*font-size/s);
   });
 
   it('sizes from room dimensions rather than control contents', () => {
@@ -56,7 +55,13 @@ describe('Steam Deck proportional battle layout', () => {
         <div class="battle"></div>
         <div class="battle-log"><div class="battle-history">Turn 1</div></div>
         <div class="battle-log-add"></div>
-        <div class="battle-controls"><div class="controls"></div></div>
+        <div class="battle-controls">
+          <div class="controls">
+            <div class="movemenu"><button class="movebutton">Move</button></div>
+            <div class="switchmenu"><button>Switch</button></div>
+          </div>
+          <div class="qol-battle-toolbar"><button>Forfeit</button></div>
+        </div>
       </div>
     `;
     const room = document.getElementById('room-battle-test-1');
@@ -70,7 +75,10 @@ describe('Steam Deck proportional battle layout', () => {
     script.updateRoomLayout(room);
 
     expect(room.style.getPropertyValue('--sd-battle-scale')).toBe(before);
-    expect(room.style.getPropertyValue('--sd-controls-height')).toBe('190.00px');
-    expect(room.style.getPropertyValue('--sd-log-left')).toBe('1096.67px');
+    expect(room.style.getPropertyValue('--sd-log-left')).toBe('1116.93px');
+    const styles = document.getElementById('steam-deck-battle-layout-style').textContent;
+    expect(styles).toContain('width: var(--sd-battle-left, 10%)');
+    expect(styles).toContain('.qol-battle-toolbar');
+    expect(styles).toContain('display: none !important');
   });
 });

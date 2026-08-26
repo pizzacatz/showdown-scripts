@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Showdown Steam Deck Battle Layout
 // @namespace    http://tampermonkey.net/
-// @version      0.3.0
+// @version      0.4.0
 // @description  Proportionally enlarges and centers Pokémon Showdown's battlefield while preserving stable controls and a compact live log.
 // @match        *://play.pokemonshowdown.com/*
 // @grant        none
@@ -16,10 +16,9 @@
     // Percentages are relative to the visible battle room, so the layout
     // follows the Steam Deck viewport without being tied to 1280x800 pixels.
     const CONFIG = {
-        // Maximize the battlefield while permanently reserving the bottom
-        // quarter for Showdown's native move/switch choices. Extra userscript
-        // controls are allowed to overflow rather than shrinking the arena.
-        battleRegionHeightPercent: 75,
+        // The native choice controls now occupy the left gutter instead of a
+        // bottom band, allowing the battlefield to use nearly all room height.
+        battleRegionHeightPercent: 78,
         debug: false,
     };
 
@@ -51,9 +50,8 @@
     }
 
     function calculateLayout(width, height, config = CONFIG) {
-        const regionRatio = clampPercent(config.battleRegionHeightPercent, 75) / 100;
+        const regionRatio = clampPercent(config.battleRegionHeightPercent, 78) / 100;
         const battleRegionHeight = height * regionRatio;
-        const controlsHeight = height - battleRegionHeight;
 
         const scale = Math.min(
             width / NATIVE_BATTLE.width,
@@ -67,7 +65,6 @@
         return {
             scale,
             battleRegionHeight,
-            controlsHeight,
             battleLeft,
             battleTop: (battleRegionHeight - renderedHeight) / 2,
             renderedWidth,
@@ -91,8 +88,6 @@
         setPixelVariable(room, '--sd-battle-top', layout.battleTop);
         setPixelVariable(room, '--sd-battle-width', layout.renderedWidth);
         setPixelVariable(room, '--sd-log-left', layout.logLeft);
-        setPixelVariable(room, '--sd-controls-top', layout.battleRegionHeight);
-        setPixelVariable(room, '--sd-controls-height', layout.controlsHeight);
         log('layout updated', layout);
     }
 
@@ -137,22 +132,98 @@
 
             .${LAYOUT_CLASS} .battle-controls {
                 box-sizing: border-box;
-                top: var(--sd-controls-top, 75%) !important;
+                top: 0 !important;
                 bottom: 0 !important;
-                left: var(--sd-battle-left, 0px) !important;
-                width: var(--sd-battle-width, 100%) !important;
-                height: var(--sd-controls-height, 25%) !important;
+                left: 0 !important;
+                width: var(--sd-battle-left, 10%) !important;
+                height: 100% !important;
                 overflow-x: hidden;
                 overflow-y: auto;
-                padding-top: 6px;
+                padding: 4px;
             }
 
             .${LAYOUT_CLASS} .battle-controls > .controls {
                 box-sizing: border-box;
-                width: 640px;
-                max-width: 100%;
-                margin-left: auto;
-                margin-right: auto;
+                width: 100%;
+                max-width: none;
+                margin: 0;
+            }
+
+            .${LAYOUT_CLASS} .battle-controls .whatdo {
+                box-sizing: border-box;
+                margin: 0 0 4px;
+                padding: 2px;
+                font-size: 8pt;
+                overflow-wrap: anywhere;
+            }
+
+            .${LAYOUT_CLASS} .battle-controls .timerbutton {
+                float: none;
+                width: 100%;
+                margin: 2px 0;
+                padding-left: 2px;
+                padding-right: 2px;
+            }
+
+            .${LAYOUT_CLASS} .battle-controls .movecontrols,
+            .${LAYOUT_CLASS} .battle-controls .shiftcontrols,
+            .${LAYOUT_CLASS} .battle-controls .switchcontrols,
+            .${LAYOUT_CLASS} .battle-controls .movemenu,
+            .${LAYOUT_CLASS} .battle-controls .switchmenu,
+            .${LAYOUT_CLASS} .battle-controls .allyparty {
+                box-sizing: border-box;
+                display: block !important;
+                width: 100%;
+                max-width: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            .${LAYOUT_CLASS} .battle-controls .moveselect button,
+            .${LAYOUT_CLASS} .battle-controls .switchselect button,
+            .${LAYOUT_CLASS} .battle-controls .shiftselect button {
+                box-sizing: border-box;
+                width: 100%;
+                padding: 5px 2px 3px;
+                font-size: 9pt;
+            }
+
+            .${LAYOUT_CLASS} .battle-controls .movebutton,
+            .${LAYOUT_CLASS} .battle-controls .switchmenu button,
+            .${LAYOUT_CLASS} .battle-controls .allyparty button {
+                box-sizing: border-box;
+                float: none;
+                width: 100%;
+                min-height: 40px;
+                height: auto;
+                margin: 3px 0;
+                padding: 5px 2px;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+
+            .${LAYOUT_CLASS} .battle-controls .megaevo-box {
+                padding-top: 4px;
+            }
+
+            .${LAYOUT_CLASS} .battle-controls .megaevo {
+                box-sizing: border-box;
+                width: 100%;
+                margin: 2px 0;
+                padding: 3px 1px;
+                font-size: 8pt;
+                overflow-wrap: anywhere;
+            }
+
+            .${LAYOUT_CLASS} .battle-controls .movewarning {
+                box-sizing: border-box;
+                padding: 4px 1px;
+                font-size: 8pt;
+                overflow-wrap: anywhere;
+            }
+
+            .${LAYOUT_CLASS} .qol-battle-toolbar {
+                display: none !important;
             }
 
             .${LAYOUT_CLASS} .battle-log,
